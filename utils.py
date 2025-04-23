@@ -5,74 +5,160 @@ import os
 from datetime import datetime, timedelta
 import csv
 import io
+from database import (
+    get_all, get_by_id, create, update, delete, 
+    get_user_by_username, get_team_members as db_get_team_members,
+    get_user_badges as db_get_user_badges, get_active_sprints,
+    User, Team, Badge, BadgeAward, Sprint
+)
 
 def load_data(data_type):
     """
-    Load data from persistence layer.
-    In a production app, this would use a database.
-    For this sample, we're using session state to simulate persistence.
+    Load data from database.
+    If no data exists, populate with sample data.
     """
-    # Initialize with sample data if not already loaded
-    from data.sample_data import (
-        sample_badges, 
-        sample_users, 
-        sample_teams, 
-        sample_awards,
-        sample_sprints
-    )
-    
+    # Check if data exists
     if data_type == 'badges':
-        return sample_badges
+        data = get_all(Badge)
+        if not data:
+            # Load sample data
+            from data.sample_data import sample_badges
+            for badge_id, badge_data in sample_badges.items():
+                badge_data['id'] = badge_id
+                create(Badge, badge_data)
+            data = get_all(Badge)
+        
+        # Convert to dictionary format compatible with existing code
+        return {badge['id']: badge for badge in data}
+    
     elif data_type == 'users':
-        return sample_users
+        data = get_all(User)
+        if not data:
+            # Load sample data
+            from data.sample_data import sample_users
+            for user_data in sample_users:
+                create(User, user_data)
+            data = get_all(User)
+        return data
+    
     elif data_type == 'teams':
-        return sample_teams
+        data = get_all(Team)
+        if not data:
+            # Load sample data
+            from data.sample_data import sample_teams
+            for team_data in sample_teams:
+                create(Team, team_data)
+            data = get_all(Team)
+        return data
+    
     elif data_type == 'awards':
-        return sample_awards
+        data = get_all(BadgeAward)
+        if not data:
+            # Load sample data
+            from data.sample_data import sample_awards
+            for award_data in sample_awards:
+                create(BadgeAward, award_data)
+            data = get_all(BadgeAward)
+        return data
+    
     elif data_type == 'sprints':
-        return sample_sprints
+        data = get_all(Sprint)
+        if not data:
+            # Load sample data
+            from data.sample_data import sample_sprints
+            for sprint_data in sample_sprints:
+                create(Sprint, sprint_data)
+            data = get_all(Sprint)
+        return data
+    
     else:
         return []
 
 def save_data(data_type, data):
     """
-    Save data to persistence layer.
-    In a production app, this would use a database.
-    For this sample, we're storing in session state.
+    Save data to database.
+    For bulk operations, this would be optimized in a production app.
     """
     if data_type == 'badges':
-        st.session_state.badges = data
+        # For dictionary-based badges
+        if isinstance(data, dict):
+            for badge_id, badge_data in data.items():
+                badge_data['id'] = badge_id
+                # Check if badge exists
+                existing = get_by_id(Badge, badge_id)
+                if existing:
+                    update(Badge, badge_id, badge_data)
+                else:
+                    create(Badge, badge_data)
+        # For list-based badges
+        else:
+            for badge_data in data:
+                badge_id = badge_data.get('id')
+                if badge_id:
+                    existing = get_by_id(Badge, badge_id)
+                    if existing:
+                        update(Badge, badge_id, badge_data)
+                    else:
+                        create(Badge, badge_data)
+    
     elif data_type == 'users':
-        st.session_state.users = data
+        for user_data in data:
+            user_id = user_data.get('id')
+            if user_id:
+                existing = get_by_id(User, user_id)
+                if existing:
+                    update(User, user_id, user_data)
+                else:
+                    create(User, user_data)
+    
     elif data_type == 'teams':
-        st.session_state.teams = data
+        for team_data in data:
+            team_id = team_data.get('id')
+            if team_id:
+                existing = get_by_id(Team, team_id)
+                if existing:
+                    update(Team, team_id, team_data)
+                else:
+                    create(Team, team_data)
+    
     elif data_type == 'awards':
-        st.session_state.awards = data
+        for award_data in data:
+            award_id = award_data.get('id')
+            if award_id:
+                existing = get_by_id(BadgeAward, award_id)
+                if existing:
+                    update(BadgeAward, award_id, award_data)
+                else:
+                    create(BadgeAward, award_data)
+    
     elif data_type == 'sprints':
-        st.session_state.sprints = data
+        for sprint_data in data:
+            sprint_id = sprint_data.get('id')
+            if sprint_id:
+                existing = get_by_id(Sprint, sprint_id)
+                if existing:
+                    update(Sprint, sprint_id, sprint_data)
+                else:
+                    create(Sprint, sprint_data)
 
 def get_user_by_id(user_id):
     """Get a user by their ID"""
-    users = st.session_state.users
-    return next((u for u in users if u['id'] == user_id), None)
+    return get_by_id(User, user_id)
 
 def get_badge_by_id(badge_id):
     """Get a badge by its ID"""
-    badges = st.session_state.badges
-    return badges.get(badge_id, None)
+    return get_by_id(Badge, badge_id)
 
 def get_team_by_id(team_id):
     """Get a team by its ID"""
-    teams = st.session_state.teams
-    return next((t for t in teams if t['id'] == team_id), None)
+    return get_by_id(Team, team_id)
 
 def get_user_badges(user_id):
     """Get all badges for a specific user"""
-    awards = st.session_state.awards
-    user_awards = [a for a in awards if a['user_id'] == user_id]
+    awards = db_get_user_badges(user_id)
     
     result = []
-    for award in user_awards:
+    for award in awards:
         badge = get_badge_by_id(award['badge_id'])
         if badge:
             badge_data = badge.copy()
@@ -87,8 +173,7 @@ def get_user_badges(user_id):
 
 def get_team_members(team_id):
     """Get all members of a specific team"""
-    users = st.session_state.users
-    return [u for u in users if u['team_id'] == team_id]
+    return db_get_team_members(team_id)
 
 def generate_unique_id(prefix=""):
     """Generate a unique ID based on timestamp"""
@@ -150,27 +235,21 @@ def filter_badges_by_role(badges, role):
 
 def get_current_sprint():
     """Get the current active sprint"""
-    sprints = st.session_state.sprints
-    current_date = datetime.now().strftime("%Y-%m-%d")
+    active_sprints = get_active_sprints()
+    if active_sprints:
+        return active_sprints[0]
     
-    for sprint in sprints:
-        start_date = sprint.get('start_date')
-        end_date = sprint.get('end_date')
-        
-        if start_date and end_date:
-            if start_date <= current_date <= end_date:
-                return sprint
-    
-    # Return the most recent sprint if no active sprint is found
-    if sprints:
-        return sorted(sprints, key=lambda x: x.get('end_date', ''), reverse=True)[0]
+    # If no active sprint, get all sprints and find the most recent
+    all_sprints = get_all(Sprint)
+    if all_sprints:
+        return sorted(all_sprints, key=lambda x: x.get('end_date', ''), reverse=True)[0]
     
     return None
 
 def calculate_team_stats(team_id):
     """Calculate statistics for a team"""
     team_members = get_team_members(team_id)
-    awards = st.session_state.awards
+    awards = get_all(BadgeAward)
     
     total_badges = 0
     badges_per_member = {}

@@ -54,7 +54,13 @@ else:
     with st.sidebar:
         st.write(f"👤 Logged in as: **{user['name']}**")
         st.write(f"Role: **{user['role']}**")
-        st.write(f"Team: **{user['team']}**")
+        # Get team name from team_id
+        team_name = "N/A"
+        if user['team_id']:
+            team = next((t for t in st.session_state.teams if t['id'] == user['team_id']), None)
+            if team:
+                team_name = team['name']
+        st.write(f"Team: **{team_name}**")
         
         st.divider()
         

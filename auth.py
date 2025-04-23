@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
-from utils import load_data
+from database import get_user_by_username
 
 def initialize_auth():
     """Initialize authentication-related session state variables"""
@@ -16,10 +16,8 @@ def authenticate_user(username, password):
     Authenticate a user based on username and password
     In a production app, use proper authentication and password hashing
     """
-    users = st.session_state.users
-    
-    # Find user by username
-    user = next((u for u in users if u['username'].lower() == username.lower()), None)
+    # Get user from database by username
+    user = get_user_by_username(username)
     
     if user and user['password'] == password:  # In a real app, use password hashing!
         st.session_state.authenticated = True
