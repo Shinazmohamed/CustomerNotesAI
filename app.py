@@ -132,10 +132,12 @@ else:
     
     with col2:
         # Count badges earned in last 30 days
-        thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
         recent_badges = sum(1 for a in user_awards 
-                          if datetime.strptime(a.get('award_date', '1900-01-01'), "%Y-%m-%d").date() >= 
-                          datetime.strptime(thirty_days_ago, "%Y-%m-%d").date())
+                          if a.get('award_date') and 
+                          (isinstance(a['award_date'], datetime) or 
+                           isinstance(a['award_date'], date)) and
+                          a['award_date'] >= thirty_days_ago)
         st.metric("Recent Badges", recent_badges)
     
     with col3:
