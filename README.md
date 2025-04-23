@@ -44,6 +44,30 @@ The application will be available at `http://0.0.0.0:5000`
 - `pages/`: Streamlit pages for different sections
 - `data/`: Sample data and data loading scripts
 
+## Database Setup
+
+### Option 1: PostgreSQL (Default)
+The application is configured to use PostgreSQL by default. To use PostgreSQL:
+
+1. Click the "Database" tab in Replit
+2. Click "Create a database" 
+3. The DATABASE_URL environment variable will be automatically configured
+
+### Option 2: SQL Server
+To use SQL Server, modify the DATABASE_URL environment variable in Replit:
+
+1. Click the "Secrets" tool in the Tools panel
+2. Add a new secret named DATABASE_URL with your SQL Server connection string:
+   ```
+   mssql+pyodbc://<username>:<password>@<server>/<database>?driver=ODBC+Driver+17+for+SQL+Server
+   ```
+3. Install the required SQL Server dependencies:
+   ```bash
+   pip install pyodbc
+   ```
+
+Note: Make sure your SQL Server instance is accessible from Replit and has the appropriate firewall rules configured.
+
 ## Initial Setup
 The application automatically initializes with sample data for:
 - Teams
