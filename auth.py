@@ -4,19 +4,20 @@ import json
 import os
 from database import get_user_by_username
 
-def initialize_auth():
-    """Initialize authentication-related session state variables"""
-    if 'authenticated' not in st.session_state:
-        st.session_state.authenticated = False
-    if 'current_user' not in st.session_state:
-        st.session_state.current_user = None
-        
-# Initialize authentication at module load time
-# This ensures session state variables are set in all pages
+# Initialize session state variables for authentication
+# This is done at module level so it's available to all functions
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 if 'current_user' not in st.session_state:
     st.session_state.current_user = None
+
+def initialize_auth():
+    """
+    Initialize authentication-related session state variables.
+    This function exists for backwards compatibility.
+    Session state is already initialized at module level.
+    """
+    pass
 
 def authenticate_user(username, password):
     """

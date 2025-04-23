@@ -1,4 +1,12 @@
 import streamlit as st
+# Page configuration must be the first Streamlit command
+st.set_page_config(
+    page_title="IT Team Gamification",
+    page_icon="🏆",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 import pandas as pd
 import os
 from datetime import datetime, timedelta
@@ -8,14 +16,6 @@ from database import init_db, get_all, Badge, User, Team, BadgeAward, Sprint, ge
 
 # Initialize database
 init_db()
-
-# Page configuration
-st.set_page_config(
-    page_title="IT Team Gamification",
-    page_icon="🏆",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # Ensure database is populated with initial data in the correct order
 # This will only add sample data if the tables are empty

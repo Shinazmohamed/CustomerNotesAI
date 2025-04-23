@@ -1,16 +1,16 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from auth import is_authenticated, get_current_user
-from utils import get_user_badges, get_team_by_id, calculate_team_stats
-
-# Page config
+# Page config must be the first Streamlit command
 st.set_page_config(
     page_title="Dashboard - IT Team Gamification",
     page_icon="🏆",
     layout="wide"
 )
+
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from auth import is_authenticated, get_current_user
+from utils import get_user_badges, get_team_by_id, calculate_team_stats
 
 # Authentication check
 if not is_authenticated():
