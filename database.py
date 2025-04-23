@@ -14,7 +14,19 @@ from sqlalchemy.orm import sessionmaker, relationship
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
     DATABASE_URL = "sqlite:///gamification.db"
-    print("Using SQLite database instead of PostgreSQL")
+    print("Using SQLite database instead of SQL Server")
+else:
+    # Convert DATABASE_URL to SQL Server format if needed
+    if DATABASE_URL.startswith('mssql'):
+        try:
+            # Ensure pyodbc is using the correct driver
+            import pyodbc
+            drivers = [driver for driver in pyodbc.drivers() if 'SQL Server' in driver]
+            if drivers:
+                driver = drivers[0]
+                DATABASE_URL = DATABASE_URL + f"?driver={driver}"
+        except Exception as e:
+            print(f"Error configuring SQL Server driver: {str(e)}")
 
 # Add retry logic for database connections
 def get_engine():
