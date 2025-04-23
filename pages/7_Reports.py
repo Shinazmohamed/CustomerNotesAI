@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import io
 from auth import is_authenticated, get_current_user, user_has_access
 from utils import get_team_by_id, export_to_csv, calculate_team_stats, get_badge_by_id
@@ -233,7 +233,7 @@ elif report_type == "Badge Distribution Analysis":
 
     with col1:
         # Team filter
-        selected_team = st.selectbox(
+        selected_team_id = st.selectbox(
             "Select Team",
             options=["All Teams"] + [t['id'] for t in teams],
             format_func=lambda x: "All Teams" if x == "All Teams" else next(
@@ -250,8 +250,8 @@ elif report_type == "Badge Distribution Analysis":
         selected_category = st.selectbox("Badge Category", categories)
 
     # Apply filters to awards
-    if selected_team != "All Teams":
-        team_members = [u['id'] for u in st.session_state.users if u['team_id'] == selected_team]
+    if selected_team_id != "All Teams":
+        team_members = [u['id'] for u in st.session_state.users if u['team_id'] == selected_team_id]
         badge_awards = [a for a in filtered_awards if a['user_id'] in team_members]
     else:
         badge_awards = filtered_awards
@@ -361,7 +361,7 @@ elif report_type == "Work-Objective Balance":
 
     with col1:
         # Team filter
-        selected_team = st.selectbox(
+        selected_team_id = st.selectbox(
             "Select Team",
             options=["All Teams"] + [t['id'] for t in teams],
             format_func=lambda x: "All Teams" if x == "All Teams" else next(
@@ -375,10 +375,10 @@ elif report_type == "Work-Objective Balance":
         selected_role = st.selectbox("Role", roles)
 
     # Filter team members
-    if selected_team == "All Teams":
+    if selected_team_id == "All Teams":
         team_members = st.session_state.users
     else:
-        team_members = [u for u in st.session_state.users if u['team_id'] == selected_team]
+        team_members = [u for u in st.session_state.users if u['team_id'] == selected_team_id]
 
     # Apply role filter
     if selected_role != "All Roles":
@@ -466,7 +466,7 @@ elif report_type == "Work-Objective Balance":
             st.plotly_chart(fig2, use_container_width=True)
 
             # Team averages (if multiple teams)
-            if selected_team == "All Teams" and len(teams) > 1:
+            if selected_team_id == "All Teams" and len(teams) > 1:
                 team_avgs = balance_df.groupby('Team').agg({
                     'Work %': 'mean',
                     'Objective %': 'mean',
@@ -721,7 +721,7 @@ elif report_type == "Leaderboard":
 
     with col1:
         # Team filter
-        selected_team = st.selectbox(
+        selected_team_id = st.selectbox(
             "Team",
             options=["All Teams"] + [t['id'] for t in teams],
             format_func=lambda x: "All Teams" if x == "All Teams" else next(
@@ -740,10 +740,10 @@ elif report_type == "Leaderboard":
         selected_badge_type = st.selectbox("Badge Type", badge_types)
 
     # Filter users
-    if selected_team == "All Teams":
+    if selected_team_id == "All Teams":
         users = st.session_state.users
     else:
-        users = [u for u in st.session_state.users if u['team_id'] == selected_team]
+        users = [u for u in st.session_state.users if u['team_id'] == selected_team_id]
 
     if selected_role != "All Roles":
         users = [u for u in users if u['role'] == selected_role]
@@ -972,7 +972,7 @@ elif report_type == "Custom Report":
 
             for user_item in st.session_state.users:
                 # Filter by team if applicable
-                if selected_team != "All Teams" and user_item['team_id'] != selected_team:
+                if selected_team_id != "All Teams" and user_item['team_id'] != selected_team_id:
                     continue
 
                 # Get user's awards
