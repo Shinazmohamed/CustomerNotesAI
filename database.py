@@ -181,7 +181,7 @@ class BadgeAward(Base):
     user_id = Column(String(255), ForeignKey('users.id'), nullable=False)
     badge_id = Column(String(255), ForeignKey('badges.id'), nullable=False)
     awarded_by = Column(String(255), nullable=False)
-    award_date = Column(String(255), nullable=False)  # YYYY-MM-DD
+    award_date = Column(Date, nullable=False)  # YYYY-MM-DD
     reason = Column(Text)
     badge_type = Column(String(255))
     sprint_id = Column(String(255), ForeignKey('sprints.id'))
