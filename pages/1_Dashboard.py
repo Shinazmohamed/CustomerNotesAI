@@ -121,7 +121,8 @@ with tm3:
     thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
     recent_badges = sum(1 for b in user_badges
                        if b.get('award_date') and
-                       datetime.strptime(b['award_date'], '%Y-%m-%d').date() >= thirty_days_ago)
+                       isinstance(b['award_date'], date) and
+                       b['award_date'] >= thirty_days_ago)
     st.metric("Badges in Last 30 Days", recent_badges)
 
 with tm4:
