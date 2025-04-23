@@ -1,15 +1,27 @@
 import streamlit as st
-import pandas as pd
-from datetime import datetime
-from auth import is_authenticated, get_current_user, user_has_access
-from utils import generate_unique_id, get_user_by_id, get_badge_by_id, get_team_by_id, get_team_members
-
-# Page config
+# Page config must be the first Streamlit command
 st.set_page_config(
     page_title="Award Badges - IT Team Gamification",
     page_icon="🏆",
     layout="wide"
 )
+
+# Initialize session state
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
+if 'badges' not in st.session_state:
+    st.session_state.badges = {}
+if 'awards' not in st.session_state:
+    st.session_state.awards = []
+if 'sprints' not in st.session_state:
+    st.session_state.sprints = []
+
+import pandas as pd
+from datetime import datetime
+from auth import is_authenticated, get_current_user, user_has_access
+from utils import generate_unique_id, get_user_by_id, get_badge_by_id, get_team_by_id, get_team_members
 
 # Authentication check
 if not is_authenticated():

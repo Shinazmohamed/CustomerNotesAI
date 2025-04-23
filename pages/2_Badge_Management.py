@@ -1,14 +1,25 @@
 import streamlit as st
-import pandas as pd
-from auth import is_authenticated, get_current_user, user_has_access
-from utils import generate_unique_id, filter_badges_by_role
-
-# Page config
+# Page config must be the first Streamlit command
 st.set_page_config(
     page_title="Badge Management - IT Team Gamification",
     page_icon="🏆",
     layout="wide"
 )
+
+# Initialize session state
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
+if 'badges' not in st.session_state:
+    st.session_state.badges = {}
+if 'badge_to_edit' not in st.session_state:
+    st.session_state.badge_to_edit = None
+
+import pandas as pd
+from auth import is_authenticated, get_current_user, user_has_access
+from utils import generate_unique_id, filter_badges_by_role
+from database import get_all, Badge
 
 # Authentication check
 if not is_authenticated():
