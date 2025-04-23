@@ -13,8 +13,13 @@ from sqlalchemy.orm import sessionmaker, relationship
 # Create engine and session
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
-    DATABASE_URL = "sqlite:///gamification.db"
-    print("Using SQLite database instead of SQL Server")
+    DATABASE_URL = (
+        "mssql+pyodbc://@DXBSHINAZ/dbGamification"
+        "?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes"
+    )
+
+    print("Using SQL Server with Windows Authentication (DXBSHINAZ)")
+    
 else:
     # Convert DATABASE_URL to SQL Server format if needed
     if DATABASE_URL.startswith('mssql'):
@@ -48,13 +53,13 @@ class User(Base):
     """User table schema."""
     __tablename__ = 'users'
     
-    id = Column(String, primary_key=True)
-    name = Column(String, nullable=False)
-    username = Column(String, nullable=False, unique=True)
-    password = Column(String, nullable=False)
-    email = Column(String)
-    role = Column(String, nullable=False)
-    team_id = Column(String, ForeignKey('teams.id'))
+    id = Column(String(255), primary_key=True)
+    name = Column(String(255), nullable=False)
+    username = Column(String(255), nullable=False, unique=True)
+    password = Column(String(255), nullable=False)
+    email = Column(String(255))
+    role = Column(String(255), nullable=False)
+    team_id = Column(String(255), ForeignKey('teams.id'))
     is_lead = Column(Boolean, default=False)
     
     # Relationships
@@ -92,10 +97,10 @@ class Team(Base):
     """Team table schema."""
     __tablename__ = 'teams'
     
-    id = Column(String, primary_key=True)
-    name = Column(String, nullable=False)
+    id = Column(String(255), primary_key=True)
+    name = Column(String(255), nullable=False)
     description = Column(Text)
-    department = Column(String)
+    department = Column(String(255))
     
     # Relationships
     members = relationship('User', back_populates='team')
@@ -124,15 +129,15 @@ class Badge(Base):
     """Badge table schema."""
     __tablename__ = 'badges'
     
-    id = Column(String, primary_key=True)
-    name = Column(String, nullable=False)
+    id = Column(String(255), primary_key=True)
+    name = Column(String(255), nullable=False)
     description = Column(Text)
-    category = Column(String)
+    category = Column(String(255))
     how_to_achieve = Column(Text)
     eligible_roles = Column(Text)  # JSON list stored as text
     expected_time_days = Column(Integer)
-    validity = Column(String)
-    badge_type = Column(String)
+    validity = Column(String(255))
+    badge_type = Column(String(255))
     
     # Relationships
     awards = relationship('BadgeAward', back_populates='badge')
@@ -172,14 +177,14 @@ class BadgeAward(Base):
     """BadgeAward table schema."""
     __tablename__ = 'badge_awards'
     
-    id = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey('users.id'), nullable=False)
-    badge_id = Column(String, ForeignKey('badges.id'), nullable=False)
-    awarded_by = Column(String, nullable=False)
-    award_date = Column(String, nullable=False)  # YYYY-MM-DD
+    id = Column(String(255), primary_key=True)
+    user_id = Column(String(255), ForeignKey('users.id'), nullable=False)
+    badge_id = Column(String(255), ForeignKey('badges.id'), nullable=False)
+    awarded_by = Column(String(255), nullable=False)
+    award_date = Column(String(255), nullable=False)  # YYYY-MM-DD
     reason = Column(Text)
-    badge_type = Column(String)
-    sprint_id = Column(String, ForeignKey('sprints.id'))
+    badge_type = Column(String(255))
+    sprint_id = Column(String(255), ForeignKey('sprints.id'))
     
     # Relationships
     user = relationship('User', back_populates='badge_awards')
@@ -217,14 +222,14 @@ class Sprint(Base):
     """Sprint table schema."""
     __tablename__ = 'sprints'
     
-    id = Column(String, primary_key=True)
-    name = Column(String, nullable=False)
+    id = Column(String(255), primary_key=True)
+    name = Column(String(255), nullable=False)
     description = Column(Text)
-    start_date = Column(String, nullable=False)  # YYYY-MM-DD
-    end_date = Column(String, nullable=False)  # YYYY-MM-DD
-    team_id = Column(String, ForeignKey('teams.id'))
+    start_date = Column(String(255), nullable=False)  # YYYY-MM-DD
+    end_date = Column(String(255), nullable=False)  # YYYY-MM-DD
+    team_id = Column(String(255), ForeignKey('teams.id'))
     goals = Column(Text)  # JSON list stored as text
-    status = Column(String)
+    status = Column(String(255))
     
     # Relationships
     team = relationship('Team', back_populates='sprints')
@@ -258,92 +263,6 @@ class Sprint(Base):
             goals=goals,
             status=data.get('status', 'upcoming')
         )
-
-def init_db():
-    """Initialize the database."""
-    try:
-        # Create tables
-        Base.metadata.create_all(engine)
-        
-        # Check if we need to initialize with sample data
-        session = get_session()
-        user_count = session.query(User).count()
-        session.close()
-        
-        if user_count == 0:
-            print("Initializing database with sample data...")
-            from data.sample_data import load_sample_data
-            try:
-                load_sample_data()
-            except Exception as e:
-                print(f"Error loading sample data: {str(e)}")
-                # Create minimal sample data if sample data module fails
-                create_minimal_sample_data()
-    except Exception as e:
-        print(f"Error initializing database: {str(e)}")
-        # Continue anyway - tables might already exist
-
-def create_minimal_sample_data():
-    """Create minimal sample data for the application to function."""
-    try:
-        session = get_session()
-        
-        # Create Blue Team
-        blue_team = Team(
-            id="team_001",
-            name="Blue Team",
-            description="Frontend development team",
-            department="Engineering"
-        )
-        session.add(blue_team)
-        
-        # Create Manager user
-        manager = User(
-            id="user_001",
-            name="John Smith",
-            username="johnsmith",
-            password="password123",
-            email="john@example.com",
-            role="Manager",
-            team_id="team_001",
-            is_lead=True
-        )
-        session.add(manager)
-        
-        # Create Technical Badge
-        tech_badge = Badge(
-            id="badge_001",
-            name="Technical Excellence",
-            description="Demonstrates exceptional technical skills",
-            category="Technical",
-            how_to_achieve="Complete a complex technical task with high quality",
-            eligible_roles=json.dumps(["Dev", "QA", "RMO", "TL"]),
-            expected_time_days=14,
-            validity="Permanent",
-            badge_type="work"
-        )
-        session.add(tech_badge)
-        
-        # Create a Sprint
-        sprint = Sprint(
-            id="sprint_001",
-            name="Sprint 1",
-            description="First sprint of the project",
-            start_date="2025-04-01",
-            end_date="2025-04-21",
-            team_id="team_001",
-            goals=json.dumps(["Complete frontend redesign", "Fix critical bugs"]),
-            status="active"
-        )
-        session.add(sprint)
-        
-        session.commit()
-        print("Created minimal sample data")
-    except Exception as e:
-        session.rollback()
-        print(f"Error creating minimal sample data: {str(e)}")
-    finally:
-        session.close()
 
 def get_session():
     """Get a database session with retry logic."""
@@ -468,6 +387,3 @@ def get_active_sprints():
         return [sprint.to_dict() for sprint in sprints]
     finally:
         session.close()
-
-# Initialize database tables if they don't exist
-init_db()
