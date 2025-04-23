@@ -210,13 +210,17 @@ def generate_unique_id(prefix=""):
     import time
     return f"{prefix}{int(time.time() * 1000)}"
 
-def format_date(date_str):
-    """Format a date string for display"""
+def format_date(date_val):
+    """Format a date value for display"""
     try:
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-        return date_obj.strftime("%b %d, %Y")
+        if isinstance(date_val, (datetime, date)):
+            return date_val.strftime("%b %d, %Y")
+        elif isinstance(date_val, str):
+            date_obj = datetime.strptime(date_val, "%Y-%m-%d")
+            return date_obj.strftime("%b %d, %Y")
+        return str(date_val)
     except:
-        return date_str
+        return str(date_val)
 
 def calculate_badge_progress(user_id, badge_id):
     """
@@ -286,7 +290,7 @@ def calculate_team_stats(team_id):
     recent_badges = 0
     
     # Calculate 30 days ago
-    thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
     
     for member in team_members:
         member_id = member['id']
@@ -299,8 +303,8 @@ def calculate_team_stats(team_id):
         
         # Count recent badges
         for award in member_awards:
-            award_date = award.get('award_date', '1900-01-01')
-            if award_date >= thirty_days_ago:
+            award_date = award.get('award_date')
+            if award_date and isinstance(award_date, date) and award_date >= thirty_days_ago:
                 recent_badges += 1
     
     # Calculate average badges per member

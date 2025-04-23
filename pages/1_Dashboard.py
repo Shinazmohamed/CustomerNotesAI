@@ -17,6 +17,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from auth import is_authenticated, get_current_user
 from utils import get_user_badges, get_team_by_id, calculate_team_stats
+from datetime import datetime, timedelta
 
 # Authentication check
 if not is_authenticated():
@@ -38,7 +39,7 @@ col1, col2 = st.columns([2, 1])
 with col1:
     # Badge Summary
     st.subheader("Your Badge Collection")
-    
+
     if user_badges:
         # Create a DataFrame for the badges
         badges_df = pd.DataFrame([
@@ -51,14 +52,14 @@ with col1:
             } 
             for badge in user_badges
         ])
-        
+
         # Display as a table
         st.dataframe(badges_df, use_container_width=True)
-        
+
         # Create a pie chart for badge categories
         category_counts = badges_df['Category'].value_counts().reset_index()
         category_counts.columns = ['Category', 'Count']
-        
+
         fig = px.pie(
             category_counts, 
             values='Count', 
@@ -74,7 +75,7 @@ with col1:
 with col2:
     # Personal Stats
     st.subheader("Personal Statistics")
-    
+
     # Count badges by type
     badge_counts = {
         'Technical': sum(1 for b in user_badges if b['category'] == 'Technical'),
@@ -83,19 +84,19 @@ with col2:
         'Innovation': sum(1 for b in user_badges if b['category'] == 'Innovation'),
         'Other': sum(1 for b in user_badges if b['category'] not in ['Technical', 'Leadership', 'Teamwork', 'Innovation'])
     }
-    
+
     # Display badge counts
     for category, count in badge_counts.items():
         st.metric(f"{category} Badges", count)
-    
+
     # Total badges
     st.metric("Total Badges", len(user_badges))
-    
+
     # Next Badge Progress
     # In a real app, this would calculate actual progress
     import random
     progress = random.randint(0, 100) if user_badges else 0
-    
+
     st.subheader("Next Badge Progress")
     st.progress(progress/100)
     st.write(f"{progress}% complete")
@@ -116,7 +117,12 @@ with tm2:
     st.metric("Average Badges/Member", team_stats['avg_badges'])
 
 with tm3:
-    st.metric("Badges in Last 30 Days", team_stats['recent_badges'])
+    # Count badges earned in recent period
+    thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
+    recent_badges = sum(1 for b in user_badges
+                       if b.get('award_date') and
+                       datetime.strptime(b['award_date'], '%Y-%m-%d').date() >= thirty_days_ago)
+    st.metric("Badges in Last 30 Days", recent_badges)
 
 with tm4:
     st.metric("Team Top Performer", team_stats['top_performer'])
@@ -128,10 +134,10 @@ if user_badges:
     # Sort badges by award date
     sorted_badges = sorted(
         user_badges, 
-        key=lambda x: x.get('award_date', '1900-01-01'),
+        key=lambda x: datetime.strptime(x.get('award_date', '1900-01-01'), '%Y-%m-%d') if x.get('award_date') else datetime.strptime('1900-01-01', '%Y-%m-%d'),
         reverse=True
     )[:5]  # Get 5 most recent
-    
+
     # Create timeline
     for badge in sorted_badges:
         with st.expander(f"{badge['name']} - {badge.get('award_date', 'N/A')}"):
@@ -155,7 +161,7 @@ work_obj_data = {
 
 if sum(work_obj_data['Badges']) > 0:
     work_obj_df = pd.DataFrame(work_obj_data)
-    
+
     fig = px.bar(
         work_obj_df,
         x='Category',
@@ -194,7 +200,7 @@ leaderboard_df = pd.DataFrame(leaderboard_data).sort_values('Badges', ascending=
 if not leaderboard_df.empty:
     # Highlight current user
     leaderboard_df['Current User'] = leaderboard_df['Name'] == user['name']
-    
+
     # Create a bar chart
     fig = px.bar(
         leaderboard_df,
