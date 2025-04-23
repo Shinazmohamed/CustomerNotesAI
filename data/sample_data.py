@@ -2,6 +2,18 @@
 Sample data for initializing the IT Team Gamification Platform
 """
 
+import sys
+import os
+import json
+
+# Make parent directory accessible for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+from database import create, Team, User, Badge, BadgeAward, Sprint
+
 # Sample badges
 sample_badges = {
     "badge_001": {
@@ -585,3 +597,37 @@ sample_sprints = [
         "status": "upcoming"
     }
 ]
+
+def load_sample_data():
+    """
+    Load sample data into the database.
+    This function is called during database initialization if no data exists.
+    """
+    print("Loading sample data...")
+    
+    # Add teams first
+    for team_data in sample_teams:
+        create(Team, team_data)
+    print("Added sample teams")
+    
+    # Add badges
+    for badge_id, badge_data in sample_badges.items():
+        create(Badge, badge_data)
+    print("Added sample badges")
+    
+    # Add users 
+    for user_data in sample_users:
+        create(User, user_data)
+    print("Added sample users")
+    
+    # Add sprints
+    for sprint_data in sample_sprints:
+        create(Sprint, sprint_data)
+    print("Added sample sprints")
+    
+    # Add badge awards
+    for award_data in sample_awards:
+        create(BadgeAward, award_data)
+    print("Added sample badge awards")
+    
+    print("Sample data loading complete")

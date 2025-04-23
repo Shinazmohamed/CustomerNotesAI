@@ -12,7 +12,23 @@ from sqlalchemy.orm import sessionmaker, relationship
 
 # Create engine and session
 DATABASE_URL = os.environ.get('DATABASE_URL')
-engine = create_engine(DATABASE_URL)
+if not DATABASE_URL:
+    DATABASE_URL = "sqlite:///gamification.db"
+    print("Using SQLite database instead of PostgreSQL")
+
+# Add retry logic for database connections
+def get_engine():
+    """Get database engine with retry logic."""
+    for i in range(3):  # Try 3 times
+        try:
+            return create_engine(DATABASE_URL)
+        except Exception as e:
+            print(f"Database connection attempt {i+1} failed: {str(e)}")
+            if i == 2:  # Last attempt
+                print("Using in-memory SQLite as fallback")
+                return create_engine("sqlite:///:memory:")
+
+engine = get_engine()
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
@@ -233,18 +249,104 @@ class Sprint(Base):
 
 def init_db():
     """Initialize the database."""
-    Base.metadata.create_all(engine)
-    
-    # Try to create all tables but don't fail if they already exist
     try:
+        # Create tables
         Base.metadata.create_all(engine)
+        
+        # Check if we need to initialize with sample data
+        session = get_session()
+        user_count = session.query(User).count()
+        session.close()
+        
+        if user_count == 0:
+            print("Initializing database with sample data...")
+            from data.sample_data import load_sample_data
+            try:
+                load_sample_data()
+            except Exception as e:
+                print(f"Error loading sample data: {str(e)}")
+                # Create minimal sample data if sample data module fails
+                create_minimal_sample_data()
     except Exception as e:
-        print(f"Error creating database tables: {str(e)}")
+        print(f"Error initializing database: {str(e)}")
         # Continue anyway - tables might already exist
 
+def create_minimal_sample_data():
+    """Create minimal sample data for the application to function."""
+    try:
+        session = get_session()
+        
+        # Create Blue Team
+        blue_team = Team(
+            id="team_001",
+            name="Blue Team",
+            description="Frontend development team",
+            department="Engineering"
+        )
+        session.add(blue_team)
+        
+        # Create Manager user
+        manager = User(
+            id="user_001",
+            name="John Smith",
+            username="johnsmith",
+            password="password123",
+            email="john@example.com",
+            role="Manager",
+            team_id="team_001",
+            is_lead=True
+        )
+        session.add(manager)
+        
+        # Create Technical Badge
+        tech_badge = Badge(
+            id="badge_001",
+            name="Technical Excellence",
+            description="Demonstrates exceptional technical skills",
+            category="Technical",
+            how_to_achieve="Complete a complex technical task with high quality",
+            eligible_roles=json.dumps(["Dev", "QA", "RMO", "TL"]),
+            expected_time_days=14,
+            validity="Permanent",
+            badge_type="work"
+        )
+        session.add(tech_badge)
+        
+        # Create a Sprint
+        sprint = Sprint(
+            id="sprint_001",
+            name="Sprint 1",
+            description="First sprint of the project",
+            start_date="2025-04-01",
+            end_date="2025-04-21",
+            team_id="team_001",
+            goals=json.dumps(["Complete frontend redesign", "Fix critical bugs"]),
+            status="active"
+        )
+        session.add(sprint)
+        
+        session.commit()
+        print("Created minimal sample data")
+    except Exception as e:
+        session.rollback()
+        print(f"Error creating minimal sample data: {str(e)}")
+    finally:
+        session.close()
+
 def get_session():
-    """Get a database session."""
-    return Session()
+    """Get a database session with retry logic."""
+    for i in range(3):  # Try 3 times
+        try:
+            return Session()
+        except Exception as e:
+            print(f"Session creation attempt {i+1} failed: {str(e)}")
+            if i == 2:  # Last attempt
+                print("Creating session with SQLite as fallback")
+                # Create an in-memory SQLite engine as fallback
+                fallback_engine = create_engine("sqlite:///:memory:")
+                Base.metadata.create_all(fallback_engine)
+                FallbackSession = sessionmaker(bind=fallback_engine)
+                return FallbackSession()
 
 # Database operation functions
 def get_all(model_class):
