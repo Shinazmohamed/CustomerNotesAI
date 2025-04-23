@@ -17,13 +17,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Ensure database is populated with initial data
+# Ensure database is populated with initial data in the correct order
 # This will only add sample data if the tables are empty
-load_data('badges')
-load_data('users')
-load_data('teams')
-load_data('awards')
-load_data('sprints')
+load_data('teams')  # First, create teams
+load_data('badges')  # Then badges
+load_data('users')  # Then users (which have team dependencies)
+load_data('sprints')  # Then sprints (which have team dependencies)
+load_data('awards')  # Finally awards (which depend on badges, users, and potentially sprints)
+
+# Store teams and badges in session state for UI rendering
+if 'teams' not in st.session_state:
+    st.session_state.teams = get_all(Team)
+if 'badges_dict' not in st.session_state:
+    all_badges = get_all(Badge)
+    st.session_state.badges_dict = {badge['id']: badge for badge in all_badges}
 
 # Initialize authentication
 initialize_auth()
@@ -103,8 +110,7 @@ else:
     st.subheader("Your Badge Summary")
     
     # Get awards for current user from database
-    all_badges = get_all(Badge)
-    badges_dict = {badge['id']: badge for badge in all_badges}
+    # Use cached badges_dict from session state
     user_awards = get_user_badges(user['id'])
     
     # Create columns for metrics
@@ -123,7 +129,7 @@ else:
         # Calculate progress percentage towards next badge
         # This is simplified - in real app would be more complex
         progress = user.get('next_badge_progress', 0) 
-        if progress == 0 and len(all_badges) > len(user_awards):
+        if progress == 0 and len(st.session_state.badges_dict) > len(user_awards):
             # Show some random progress if not set but user doesn't have all badges
             import random
             progress = random.randint(10, 90)

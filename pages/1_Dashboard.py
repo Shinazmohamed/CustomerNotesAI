@@ -166,12 +166,14 @@ else:
 st.subheader("Team Leaderboard")
 
 # Get all team members
-team_members = [u for u in st.session_state.users if u['team_id'] == team['id']]
+from database import get_all, User, BadgeAward
+team_members = get_team_members(team['id'])
 
 # Calculate badge counts for each member
 leaderboard_data = []
+all_awards = get_all(BadgeAward)
 for member in team_members:
-    member_badges = [a for a in st.session_state.awards if a['user_id'] == member['id']]
+    member_badges = [a for a in all_awards if a['user_id'] == member['id']]
     leaderboard_data.append({
         'Name': member['name'],
         'Role': member['role'],

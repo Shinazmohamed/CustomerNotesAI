@@ -234,6 +234,24 @@ class Sprint(Base):
 def init_db():
     """Initialize the database."""
     Base.metadata.create_all(engine)
+    
+    # Add this so we can see exceptions during development
+    import streamlit as st
+    if not hasattr(st, "_database_init_complete"):
+        # Only show first time
+        st._database_init_complete = True
+        
+        try:
+            # Try to access all tables to ensure they were created
+            session = get_session()
+            session.execute("SELECT 1 FROM teams")
+            session.execute("SELECT 1 FROM users")
+            session.execute("SELECT 1 FROM badges")
+            session.execute("SELECT 1 FROM badge_awards")
+            session.execute("SELECT 1 FROM sprints")
+        except Exception as e:
+            st.error(f"Database initialization error: {str(e)}")
+            # Let the app continue, we'll handle data loading in load_data()
 
 def get_session():
     """Get a database session."""

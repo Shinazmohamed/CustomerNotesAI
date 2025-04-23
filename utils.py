@@ -25,21 +25,15 @@ def load_data(data_type):
             from data.sample_data import sample_badges
             for badge_id, badge_data in sample_badges.items():
                 badge_data['id'] = badge_id
-                create(Badge, badge_data)
+                try:
+                    create(Badge, badge_data)
+                except Exception as e:
+                    import streamlit as st
+                    st.error(f"Error creating badge {badge_id}: {str(e)}")
             data = get_all(Badge)
         
         # Convert to dictionary format compatible with existing code
         return {badge['id']: badge for badge in data}
-    
-    elif data_type == 'users':
-        data = get_all(User)
-        if not data:
-            # Load sample data
-            from data.sample_data import sample_users
-            for user_data in sample_users:
-                create(User, user_data)
-            data = get_all(User)
-        return data
     
     elif data_type == 'teams':
         data = get_all(Team)
@@ -47,28 +41,64 @@ def load_data(data_type):
             # Load sample data
             from data.sample_data import sample_teams
             for team_data in sample_teams:
-                create(Team, team_data)
+                try:
+                    create(Team, team_data)
+                except Exception as e:
+                    import streamlit as st
+                    st.error(f"Error creating team {team_data.get('id')}: {str(e)}")
             data = get_all(Team)
         return data
     
-    elif data_type == 'awards':
-        data = get_all(BadgeAward)
+    elif data_type == 'users':
+        # Make sure teams are loaded first
+        load_data('teams')
+        
+        data = get_all(User)
         if not data:
             # Load sample data
-            from data.sample_data import sample_awards
-            for award_data in sample_awards:
-                create(BadgeAward, award_data)
-            data = get_all(BadgeAward)
+            from data.sample_data import sample_users
+            for user_data in sample_users:
+                try:
+                    create(User, user_data)
+                except Exception as e:
+                    import streamlit as st
+                    st.error(f"Error creating user {user_data.get('id')}: {str(e)}")
+            data = get_all(User)
         return data
     
     elif data_type == 'sprints':
+        # Make sure teams are loaded first
+        load_data('teams')
+        
         data = get_all(Sprint)
         if not data:
             # Load sample data
             from data.sample_data import sample_sprints
             for sprint_data in sample_sprints:
-                create(Sprint, sprint_data)
+                try:
+                    create(Sprint, sprint_data)
+                except Exception as e:
+                    import streamlit as st
+                    st.error(f"Error creating sprint {sprint_data.get('id')}: {str(e)}")
             data = get_all(Sprint)
+        return data
+    
+    elif data_type == 'awards':
+        # Make sure users and badges are loaded first
+        load_data('users')
+        load_data('badges')
+        
+        data = get_all(BadgeAward)
+        if not data:
+            # Load sample data
+            from data.sample_data import sample_awards
+            for award_data in sample_awards:
+                try:
+                    create(BadgeAward, award_data)
+                except Exception as e:
+                    import streamlit as st
+                    st.error(f"Error creating award {award_data.get('id')}: {str(e)}")
+            data = get_all(BadgeAward)
         return data
     
     else:

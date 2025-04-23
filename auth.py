@@ -10,6 +10,13 @@ def initialize_auth():
         st.session_state.authenticated = False
     if 'current_user' not in st.session_state:
         st.session_state.current_user = None
+        
+# Initialize authentication at module load time
+# This ensures session state variables are set in all pages
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
 
 def authenticate_user(username, password):
     """
