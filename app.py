@@ -32,7 +32,13 @@ if 'badges_dict' not in st.session_state:
     all_badges = get_all(Badge)
     st.session_state.badges_dict = {badge['id']: badge for badge in all_badges}
 
-# Initialize authentication
+# Initialize session state for authentication
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
+
+# Initialize authentication (for backwards compatibility)
 initialize_auth()
 
 # App title

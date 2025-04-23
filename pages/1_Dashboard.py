@@ -6,6 +6,12 @@ st.set_page_config(
     layout="wide"
 )
 
+# Initialize session state for authentication
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
