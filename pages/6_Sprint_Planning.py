@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from auth import is_authenticated, get_current_user, user_has_access
 from utils import generate_unique_id, get_team_by_id, get_current_sprint
 

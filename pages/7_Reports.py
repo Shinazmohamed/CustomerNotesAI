@@ -7,6 +7,17 @@ import io
 from auth import is_authenticated, get_current_user, user_has_access
 from utils import get_team_by_id, export_to_csv, calculate_team_stats, get_badge_by_id
 
+
+
+def safe_date(d):
+    if isinstance(d, date):
+        return d
+    try:
+        return datetime.strptime(d, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return None
+
+
 # Page config
 st.set_page_config(
     page_title="Reports - IT Team Gamification",
@@ -127,10 +138,14 @@ else:
 all_awards = st.session_state.awards
 
 # Filter awards by date
+start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+
 filtered_awards = [
-    a for a in all_awards 
-    if start_date_str <= a.get('award_date', '2100-01-01') <= end_date_str
+    a for a in all_awards
+    if safe_date(a.get('award_date')) and start_date <= safe_date(a['award_date']) <= end_date
 ]
+
 
 # Specific report generation based on selection
 if report_type == "Team Performance Overview":
@@ -164,10 +179,10 @@ if report_type == "Team Performance Overview":
                 obj_badges = sum(1 for a in team_awards if a.get('badge_type') == 'objective')
 
                 thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
-                recent_badges = sum(1 for a in team_awards if a.get('award_date') and
-                                  isinstance(a['award_date'], date) and
-                                  a['award_date'] >= thirty_days_ago)
-
+                recent_badges = sum(
+                    1 for a in team_awards
+                    if safe_date(a.get('award_date')) and safe_date(a['award_date']) >= thirty_days_ago
+                )
 
                 team_stats_data.append({
                     'Team': team['name'],
@@ -255,8 +270,10 @@ elif report_type == "Badge Distribution Analysis":
         "Select Team",
         options=["All Teams"] + [t['id'] for t in teams],
         format_func=lambda x: "All Teams" if x == "All Teams" else next(
-            (t['label'] for t in team_options if t['value'] == x), x)
+            (t['label'] for t in team_options if t['value'] == x), x),
+        key="bd_team" 
     )
+
 
     if selected_team_id != "All Teams":
         team_members = [u['id'] for u in st.session_state.users if u['team_id'] == selected_team_id]
@@ -1207,3 +1224,4 @@ elif report_type == "Custom Report":
                     export_to_csv(df, "custom_sprint_report.csv")
             else:
                 st.info("No sprint data available for the selected filters.")
+
