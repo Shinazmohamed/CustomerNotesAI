@@ -173,6 +173,7 @@ st.subheader("Team Leaderboard")
 
 # Get all team members
 from database import get_all, User, BadgeAward
+from utils import get_team_members
 team_members = get_team_members(team['id'])
 
 # Calculate badge counts for each member
