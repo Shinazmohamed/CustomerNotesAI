@@ -135,7 +135,8 @@ else:
         thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
         recent_badges = sum(1 for a in user_awards 
                           if a.get('award_date') and
-                          datetime.strptime(a['award_date'], '%Y-%m-%d').date() >= thirty_days_ago)
+                          isinstance(a['award_date'], date) and
+                          a['award_date'] >= thirty_days_ago)
         st.metric("Recent Badges", recent_badges)
     
     with col3:
