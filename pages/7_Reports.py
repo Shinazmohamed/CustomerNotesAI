@@ -513,7 +513,8 @@ elif report_type == "Sprint Achievement Analysis":
     filtered_sprints = [
         s for s in sprints 
         if s.get('status') == 'completed' and
-        start_date_str <= s.get('end_date', '2100-01-01') <= end_date_str
+        isinstance(s.get('end_date'), date) and
+        start_date_str <= s.get('end_date').strftime('%Y-%m-%d') <= end_date_str
     ]
 
     if filtered_sprints:

@@ -230,7 +230,7 @@ with tab2:
             # Chart: Badges over time
             if 'Date Earned' in earned_df.columns:
                 # Convert to datetime for charting
-                earned_df['Date'] = pd.to_datetime(earned_df['Date Earned'], errors='coerce')
+                earned_df['Date'] = pd.to_datetime([d if isinstance(d, str) else d.strftime('%Y-%m-%d') for d in earned_df['Date Earned']], errors='coerce')
 
                 # Sort by date
                 earned_df = earned_df.sort_values('Date')

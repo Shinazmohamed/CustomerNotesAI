@@ -45,8 +45,8 @@ with tab1:
         
         # Calculate days remaining
         try:
-            end_date = datetime.strptime(current_sprint['end_date'], "%Y-%m-%d")
-            current_date = datetime.now()
+            end_date = current_sprint['end_date'] if isinstance(current_sprint['end_date'], date) else datetime.strptime(current_sprint['end_date'], "%Y-%m-%d").date()
+            current_date = datetime.now().date()
             days_remaining = (end_date - current_date).days
             
             if days_remaining < 0:

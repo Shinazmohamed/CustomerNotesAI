@@ -134,8 +134,8 @@ st.subheader("Recent Activity Timeline")
 if user_badges:
     # Sort badges by award date
     sorted_badges = sorted(
-        user_badges, 
-        key=lambda x: datetime.strptime(x.get('award_date', '1900-01-01'), '%Y-%m-%d') if x.get('award_date') else datetime.strptime('1900-01-01', '%Y-%m-%d'),
+        user_badges,
+        key=lambda x: x.get('award_date', datetime(1900, 1, 1).date()) if isinstance(x.get('award_date'), date) else datetime(1900, 1, 1).date(),
         reverse=True
     )[:5]  # Get 5 most recent
 
