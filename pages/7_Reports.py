@@ -250,6 +250,14 @@ elif report_type == "Badge Distribution Analysis":
         selected_category = st.selectbox("Badge Category", categories)
 
     # Apply filters to awards
+    # Team filter
+    selected_team_id = st.selectbox(
+        "Select Team",
+        options=["All Teams"] + [t['id'] for t in teams],
+        format_func=lambda x: "All Teams" if x == "All Teams" else next(
+            (t['label'] for t in team_options if t['value'] == x), x)
+    )
+
     if selected_team_id != "All Teams":
         team_members = [u['id'] for u in st.session_state.users if u['team_id'] == selected_team_id]
         badge_awards = [a for a in filtered_awards if a['user_id'] in team_members]
