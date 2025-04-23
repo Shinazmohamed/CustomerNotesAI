@@ -17,7 +17,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from auth import is_authenticated, get_current_user
 from utils import get_user_badges, get_team_by_id, calculate_team_stats
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 # Authentication check
 if not is_authenticated():
