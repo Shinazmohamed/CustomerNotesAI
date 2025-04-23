@@ -25,12 +25,20 @@ load_data('users')  # Then users (which have team dependencies)
 load_data('sprints')  # Then sprints (which have team dependencies)
 load_data('awards')  # Finally awards (which depend on badges, users, and potentially sprints)
 
-# Store teams and badges in session state for UI rendering
+# Store data in session state for UI rendering
 if 'teams' not in st.session_state:
     st.session_state.teams = get_all(Team)
 if 'badges_dict' not in st.session_state:
     all_badges = get_all(Badge)
     st.session_state.badges_dict = {badge['id']: badge for badge in all_badges}
+if 'users' not in st.session_state:
+    st.session_state.users = get_all(User)
+if 'awards' not in st.session_state:
+    st.session_state.awards = get_all(BadgeAward)
+if 'sprints' not in st.session_state:
+    st.session_state.sprints = get_all(Sprint)
+if 'badges' not in st.session_state:
+    st.session_state.badges = st.session_state.badges_dict
 
 # Initialize session state for authentication
 if 'authenticated' not in st.session_state:
