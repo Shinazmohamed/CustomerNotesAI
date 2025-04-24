@@ -30,7 +30,7 @@ def get_engine():
     """Create database engine with retry logic"""
     for attempt in range(3):
         try:
-            return create_engine(DATABASE_URL, echo=True, **ENGINE_CONFIG)
+            return create_engine(DATABASE_URL, **ENGINE_CONFIG)
         except Exception as e:
             print(f"Connection attempt {attempt+1} failed: {str(e)}")
 

@@ -11,7 +11,7 @@ import pandas as pd
 import os
 from datetime import datetime, timedelta, date
 from auth import authenticate_user, get_current_user, is_authenticated, initialize_auth, logout
-from utils import load_data, save_data, get_user_badges, get_team_by_id
+from utils import load_data, get_user_badges, get_team_by_id
 from database import Badge, User, Team, BadgeAward, Sprint, DatabaseManager
 
 # Ensure database is populated with initial data in the correct order
