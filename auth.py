@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
-from database import get_user_by_username
+from database import DatabaseManager
 
 # Initialize session state variables for authentication
 # This is done at module level so it's available to all functions
@@ -25,7 +25,7 @@ def authenticate_user(username, password):
     In a production app, use proper authentication and password hashing
     """
     # Get user from database by username
-    user = get_user_by_username(username)
+    user = DatabaseManager.get_user_by_username(username)
     
     if user and user['password'] == password:  # In a real app, use password hashing!
         st.session_state.authenticated = True

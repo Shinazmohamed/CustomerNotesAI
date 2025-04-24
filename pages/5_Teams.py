@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from auth import is_authenticated, get_current_user, user_has_access
 from utils import get_team_by_id, generate_unique_id, get_team_members, calculate_team_stats
+from database import DatabaseManager, Team, User
 
 # Page config
 st.set_page_config(
@@ -211,7 +212,7 @@ with tab2:
                         # Update team details
                         teams = st.session_state.teams
                         team_idx = next((i for i, t in enumerate(teams) if t['id'] == selected_team['id']), -1)
-                        
+
                         if team_idx >= 0:
                             teams[team_idx]['name'] = team_name
                             teams[team_idx]['description'] = team_desc
@@ -231,7 +232,8 @@ with tab2:
                                 if lead_idx >= 0:
                                     users[lead_idx]['is_lead'] = True
                                     st.session_state.users = users
-                            
+
+                            DatabaseManager.update(Team, teams[team_idx]['id'], teams[team_idx])
                             st.session_state.teams = teams
                             st.success("Team details updated successfully!")
                             st.rerun()
@@ -282,6 +284,12 @@ with tab2:
                         member_name = st.text_input("Name", value=edit_member['name'])
                         member_email = st.text_input("Email", value=edit_member.get('email', ''))
                         
+                        selected_team_id = st.selectbox(
+                            "Select Team",
+                            options=[t['id'] for t in teams],
+                            index=teams.index(user_team) if user_team in teams else 0,
+                            format_func=lambda x: next((t['label'] for t in team_options if t['value'] == x), x)
+                        )   
                         # Role selection
                         roles = ['Dev', 'QA', 'RMO', 'TL', 'Manager']
                         member_role = st.selectbox(
@@ -302,7 +310,9 @@ with tab2:
                                 users[user_idx]['name'] = member_name
                                 users[user_idx]['email'] = member_email
                                 users[user_idx]['role'] = member_role
+                                users[user_idx]['team_id'] = selected_team_id
                                 
+                                DatabaseManager.update(User, users[user_idx]['id'], users[user_idx])
                                 st.session_state.users = users
                                 st.success(f"Member {member_name} updated successfully!")
                                 st.rerun()
@@ -316,6 +326,13 @@ with tab2:
                     new_username = st.text_input("Username")
                     new_password = st.text_input("Password", type="password")
                     
+                    selected_team_id = st.selectbox(
+                        "Select Team",
+                        options=[t['id'] for t in teams],
+                        index=teams.index(user_team) if user_team in teams else 0,
+                        format_func=lambda x: next((t['label'] for t in team_options if t['value'] == x), x)
+                    )
+
                     # Role selection
                     new_role = st.selectbox(
                         "Role",
@@ -341,11 +358,12 @@ with tab2:
                                     'password': new_password,  # In a real app, hash this password
                                     'email': new_email,
                                     'role': new_role,
-                                    'team_id': selected_team['id'],
+                                    'team_id': selected_team_id,
                                     'is_lead': False
                                 }
                                 
                                 users.append(new_user)
+                                DatabaseManager.create(User, new_user)
                                 st.session_state.users = users
                                 st.success(f"Member {new_name} added successfully!")
                                 st.rerun()
@@ -376,6 +394,7 @@ with tab2:
                         }
                         
                         teams.append(new_team)
+                        DatabaseManager.create(Team, new_team)
                         st.session_state.teams = teams
                         st.success(f"Team {new_team_name} created successfully!")
                         st.rerun()
