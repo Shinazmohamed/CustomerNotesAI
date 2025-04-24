@@ -39,7 +39,6 @@ col1, col2 = st.columns([2, 1])
 with col1:
     # Badge Summary
     st.subheader("Your Badge Collection")
-    print(user_badges)
     if user_badges:
         # Create a DataFrame for the badges
         badges_df = pd.DataFrame([
