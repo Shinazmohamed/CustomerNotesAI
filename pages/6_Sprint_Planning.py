@@ -107,7 +107,7 @@ with tab1:
                 
                 if badge and awardee:
                     badge_data.append({
-                        'Date': award.get('award_date', 'N/A'),
+                        'Date': award.get('awarded_at', 'N/A'),
                         'Badge': badge['name'],
                         'Category': badge['category'],
                         'Recipient': awardee['name'],
@@ -270,7 +270,7 @@ with tab2:
                         
                         if badge and awardee:
                             badge_data.append({
-                                'Date': award.get('award_date', 'N/A'),
+                                'Date': award.get('awarded_at', 'N/A'),
                                 'Badge': badge['name'],
                                 'Category': badge['category'],
                                 'Recipient': awardee['name'],

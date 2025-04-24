@@ -39,14 +39,18 @@ col1, col2 = st.columns([2, 1])
 with col1:
     # Badge Summary
     st.subheader("Your Badge Collection")
-
+    print(user_badges)
     if user_badges:
         # Create a DataFrame for the badges
         badges_df = pd.DataFrame([
             {
                 'Badge': badge['name'],
                 'Category': badge['category'],
-                'Date Earned': badge.get('award_date', 'N/A'),
+                'Date Earned': (
+                   badge['awarded_at'].strftime('%Y-%m-%d') 
+                   if badge.get('awarded_at') and isinstance(badge['awarded_at'], (datetime, date)) 
+                   else 'N/A'
+                ),
                 'Awarded By': badge.get('awarded_by', 'System'),
                 'Description': badge['description']
             } 
@@ -120,9 +124,9 @@ with tm3:
     # Count badges earned in recent period
     thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
     recent_badges = sum(1 for b in user_badges
-                       if b.get('award_date') and
-                       isinstance(b['award_date'], date) and
-                       b['award_date'] >= thirty_days_ago)
+                       if b.get('awarded_at') and
+                       isinstance(b['awarded_at'], date) and
+                       b['awarded_at'] >= thirty_days_ago)
     st.metric("Badges in Last 30 Days", recent_badges)
 
 with tm4:
@@ -135,13 +139,13 @@ if user_badges:
     # Sort badges by award date
     sorted_badges = sorted(
         user_badges,
-        key=lambda x: x.get('award_date', datetime(1900, 1, 1).date()) if isinstance(x.get('award_date'), date) else datetime(1900, 1, 1).date(),
+        key=lambda x: x.get('awarded_at', datetime(1900, 1, 1).date()) if isinstance(x.get('awarded_at'), date) else datetime(1900, 1, 1).date(),
         reverse=True
     )[:5]  # Get 5 most recent
 
     # Create timeline
     for badge in sorted_badges:
-        with st.expander(f"{badge['name']} - {badge.get('award_date', 'N/A')}"):
+        with st.expander(f"{badge['name']} - {badge.get('awarded_at', 'N/A')}"):
             st.write(f"**Category:** {badge['category']}")
             st.write(f"**Description:** {badge['description']}")
             st.write(f"**Awarded by:** {badge.get('awarded_by', 'System')}")
@@ -155,8 +159,8 @@ st.subheader("Work (80%) vs. Objectives (20%) Split")
 work_obj_data = {
     'Category': ['Regular Work', 'Objectives'],
     'Badges': [
-        sum(1 for b in user_badges if b.get('badge_type') == 'work'), 
-        sum(1 for b in user_badges if b.get('badge_type') == 'objective')
+        sum(1 for b in user_badges if b.get('criteria') == 'work'), 
+        sum(1 for b in user_badges if b.get('criteria') == 'objective')
     ]
 }
 

@@ -196,7 +196,7 @@ with tab2:
                     earned_data.append({
                         'Badge': badge['name'],
                         'Category': badge['category'],
-                        'Date Earned': award.get('award_date', 'N/A'),
+                        'Date Earned': award.get('awarded_at', 'N/A'),
                         'Awarded By': next((u['name'] for u in st.session_state.users 
                                           if u['id'] == award.get('awarded_by')), 'System'),
                         'Type': badge.get('badge_type', 'work').capitalize(),

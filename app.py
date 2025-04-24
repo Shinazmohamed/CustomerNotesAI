@@ -134,9 +134,9 @@ else:
         # Count badges earned in last 30 days
         thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
         recent_badges = sum(1 for a in user_awards 
-                          if a.get('award_date') and
-                          isinstance(a['award_date'], date) and
-                          a['award_date'] >= thirty_days_ago)
+                          if a.get('awarded_at') and
+                          isinstance(a['awarded_at'], date) and
+                          a['awarded_at'] >= thirty_days_ago)
         st.metric("Recent Badges", recent_badges)
     
     with col3:
@@ -162,12 +162,12 @@ else:
     
     if user_awards:
         # Get 5 most recent awards
-        sorted_awards = sorted(user_awards, key=lambda x: x.get('award_date', '1900-01-01'), reverse=True)[:5]
+        sorted_awards = sorted(user_awards, key=lambda x: x.get('awarded_at', '1900-01-01'), reverse=True)[:5]
         
         recent_awards_df = pd.DataFrame([
             {
                 'Badge': award.get('name', 'Unknown'),
-                'Date': award.get('award_date', 'N/A'),
+                'Date': award.get('awarded_at', 'N/A'),
                 'Awarded By': award.get('awarded_by', 'System')
             }
             for award in sorted_awards

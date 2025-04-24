@@ -114,7 +114,7 @@ def get_user_badges(user_id):
         if badge:
             badge_data = badge.copy()
             badge_data.update({
-                'award_date': award.get('award_date', 'N/A'),
+                'awarded_at': award.get('awarded_at', 'N/A'),
                 'awarded_by': award.get('awarded_by', 'System'),
                 'award_id': award.get('id', 'N/A')
             })
@@ -224,8 +224,8 @@ def calculate_team_stats(team_id):
         
         # Count recent badges
         for award in member_awards:
-            award_date = award.get('award_date')
-            if award_date and isinstance(award_date, date) and award_date >= thirty_days_ago:
+            awarded_at = award.get('awarded_at')
+            if awarded_at and isinstance(awarded_at, date) and awarded_at >= thirty_days_ago:
                 recent_badges += 1
     
     # Calculate average badges per member

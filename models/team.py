@@ -100,8 +100,8 @@ class Team:
             
             # Count recent badges
             for award in member_awards:
-                award_date = award.get('award_date', '1900-01-01')
-                if award_date >= thirty_days_ago:
+                awarded_at = award.get('awarded_at', '1900-01-01')
+                if awarded_at >= thirty_days_ago:
                     recent_badges += 1
         
         # Calculate average badges per member

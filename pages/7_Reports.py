@@ -55,7 +55,7 @@ if not user_has_access('view_reports'):
                 badge_data.append({
                     'Badge': badge['name'],
                     'Category': badge['category'],
-                    'Date Earned': award.get('award_date', 'N/A'),
+                    'Date Earned': award.get('awarded_at', 'N/A'),
                     'Type': award.get('badge_type', 'work').capitalize()
                 })
 
@@ -143,7 +143,7 @@ end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
 filtered_awards = [
     a for a in all_awards
-    if safe_date(a.get('award_date')) and start_date <= safe_date(a['award_date']) <= end_date
+    if safe_date(a.get('awarded_at')) and start_date <= safe_date(a['awarded_at']) <= end_date
 ]
 
 
@@ -181,7 +181,7 @@ if report_type == "Team Performance Overview":
                 thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
                 recent_badges = sum(
                     1 for a in team_awards
-                    if safe_date(a.get('award_date')) and safe_date(a['award_date']) >= thirty_days_ago
+                    if safe_date(a.get('awarded_at')) and safe_date(a['awarded_at']) >= thirty_days_ago
                 )
 
                 team_stats_data.append({
@@ -297,7 +297,7 @@ elif report_type == "Badge Distribution Analysis":
                     'Recipient': user['name'],
                     'Team': team['name'],
                     'Role': user['role'],
-                    'Date': award.get('award_date', 'N/A'),
+                    'Date': award.get('awarded_at', 'N/A'),
                     'Type': award.get('badge_type', 'work').capitalize()
                 })
 
@@ -681,7 +681,7 @@ elif report_type == "Sprint Achievement Analysis":
 
                             if badge and user:
                                 award_details.append({
-                                    'Date': award.get('award_date', 'N/A'),
+                                    'Date': award.get('awarded_at', 'N/A'),
                                     'Badge': badge['name'],
                                     'Category': badge['category'],
                                     'Recipient': user['name'],
@@ -931,7 +931,7 @@ elif report_type == "Custom Report":
                     if "Role" in selected_dimensions:
                         item["Role"] = user['role']
                     if "Date Awarded" in selected_dimensions:
-                        item["Date Awarded"] = award.get('award_date', 'N/A')
+                        item["Date Awarded"] = award.get('awarded_at', 'N/A')
                     if "Badge Type" in selected_dimensions:
                         item["Badge Type"] = award.get('badge_type', 'work').capitalize()
 

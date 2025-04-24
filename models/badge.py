@@ -94,14 +94,14 @@ class BadgeAward:
         user_id (str): ID of the user receiving the badge
         badge_id (str): ID of the badge being awarded
         awarded_by (str): ID of the user who awarded the badge
-        award_date (str): Date the badge was awarded
+        awarded_at (str): Date the badge was awarded
         reason (str): Reason for awarding the badge
         badge_type (str): Type of work the badge is for (work or objective)
         sprint_id (str, optional): ID of the sprint this award is associated with
     """
     
     def __init__(self, award_id, user_id, badge_id, awarded_by,
-                 award_date, reason=None, badge_type="work", sprint_id=None):
+                 awarded_at, reason=None, badge_type="work", sprint_id=None):
         """
         Initialize a new BadgeAward object.
         
@@ -110,7 +110,7 @@ class BadgeAward:
             user_id (str): ID of the user receiving the badge
             badge_id (str): ID of the badge being awarded
             awarded_by (str): ID of the user who awarded the badge
-            award_date (str): Date the badge was awarded (YYYY-MM-DD)
+            awarded_at (str): Date the badge was awarded (YYYY-MM-DD)
             reason (str, optional): Reason for awarding the badge
             badge_type (str, optional): Type of work the badge is for
             sprint_id (str, optional): ID of the sprint this award is associated with
@@ -119,7 +119,7 @@ class BadgeAward:
         self.user_id = user_id
         self.badge_id = badge_id
         self.awarded_by = awarded_by
-        self.award_date = award_date
+        self.awarded_at = awarded_at
         self.reason = reason or ""
         self.badge_type = badge_type
         self.sprint_id = sprint_id
@@ -137,7 +137,7 @@ class BadgeAward:
             'user_id': self.user_id,
             'badge_id': self.badge_id,
             'awarded_by': self.awarded_by,
-            'award_date': self.award_date,
+            'awarded_at': self.awarded_at,
             'reason': self.reason,
             'badge_type': self.badge_type,
             'sprint_id': self.sprint_id,
@@ -160,7 +160,7 @@ class BadgeAward:
             user_id=data.get('user_id'),
             badge_id=data.get('badge_id'),
             awarded_by=data.get('awarded_by'),
-            award_date=data.get('award_date'),
+            awarded_at=data.get('awarded_at'),
             reason=data.get('reason'),
             badge_type=data.get('badge_type', 'work'),
             sprint_id=data.get('sprint_id')
