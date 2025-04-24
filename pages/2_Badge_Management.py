@@ -18,8 +18,7 @@ if 'badge_to_edit' not in st.session_state:
 
 import pandas as pd
 from auth import is_authenticated, get_current_user, user_has_access
-from utils import generate_unique_id, filter_badges_by_role
-from database import get_all, Badge
+from utils import generate_unique_id
 
 # Authentication check
 if not is_authenticated():

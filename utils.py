@@ -1,108 +1,29 @@
 import streamlit as st
 import pandas as pd
-import json
-import os
 from datetime import datetime, timedelta, date
-import csv
-import io
 from database import (
-    get_all, get_by_id, create, update, delete, 
-    get_user_by_username, get_team_members as db_get_team_members,
-    get_user_badges as db_get_user_badges, get_active_sprints,
-    User, Team, Badge, BadgeAward, Sprint
+    User, Team, Badge, BadgeAward, Sprint, DatabaseManager, GamificationQueries
 )
 
 def load_data(data_type):
-    """
-    Load data from database.
-    If no data exists, populate with sample data.
-    """
-    # Check if data exists
     if data_type == 'badges':
-        data = get_all(Badge)
-        if not data:
-            # Load sample data
-            from data.sample_data import sample_badges
-            for badge_id, badge_data in sample_badges.items():
-                badge_data['id'] = badge_id
-                try:
-                    create(Badge, badge_data)
-                except Exception as e:
-                    import streamlit as st
-                    st.error(f"Error creating badge {badge_id}: {str(e)}")
-            data = get_all(Badge)
-        
-        # Convert to dictionary format compatible with existing code
-        return {badge['id']: badge for badge in data}
+        return {badge['id']: badge for badge in DatabaseManager.get_all(Badge)}
     
     elif data_type == 'teams':
-        data = get_all(Team)
-        if not data:
-            # Load sample data
-            from data.sample_data import sample_teams
-            for team_data in sample_teams:
-                try:
-                    create(Team, team_data)
-                except Exception as e:
-                    import streamlit as st
-                    st.error(f"Error creating team {team_data.get('id')}: {str(e)}")
-            data = get_all(Team)
-        return data
+        return DatabaseManager.get_all(Team)
     
     elif data_type == 'users':
-        # Make sure teams are loaded first
-        load_data('teams')
-        
-        data = get_all(User)
-        if not data:
-            # Load sample data
-            from data.sample_data import sample_users
-            for user_data in sample_users:
-                try:
-                    create(User, user_data)
-                except Exception as e:
-                    import streamlit as st
-                    st.error(f"Error creating user {user_data.get('id')}: {str(e)}")
-            data = get_all(User)
-        return data
+        return DatabaseManager.get_all(User)
     
     elif data_type == 'sprints':
-        # Make sure teams are loaded first
-        load_data('teams')
-        
-        data = get_all(Sprint)
-        if not data:
-            # Load sample data
-            from data.sample_data import sample_sprints
-            for sprint_data in sample_sprints:
-                try:
-                    create(Sprint, sprint_data)
-                except Exception as e:
-                    import streamlit as st
-                    st.error(f"Error creating sprint {sprint_data.get('id')}: {str(e)}")
-            data = get_all(Sprint)
-        return data
+        return DatabaseManager.get_all(Sprint)
     
     elif data_type == 'awards':
-        # Make sure users and badges are loaded first
-        load_data('users')
-        load_data('badges')
-        
-        data = get_all(BadgeAward)
-        if not data:
-            # Load sample data
-            from data.sample_data import sample_awards
-            for award_data in sample_awards:
-                try:
-                    create(BadgeAward, award_data)
-                except Exception as e:
-                    import streamlit as st
-                    st.error(f"Error creating award {award_data.get('id')}: {str(e)}")
-            data = get_all(BadgeAward)
-        return data
+        return DatabaseManager.get_all(BadgeAward)
     
     else:
         return []
+
 
 def save_data(data_type, data):
     """
@@ -115,77 +36,77 @@ def save_data(data_type, data):
             for badge_id, badge_data in data.items():
                 badge_data['id'] = badge_id
                 # Check if badge exists
-                existing = get_by_id(Badge, badge_id)
+                existing = DatabaseManager.get_by_id(Badge, badge_id)
                 if existing:
-                    update(Badge, badge_id, badge_data)
+                    DatabaseManager.update(Badge, badge_id, badge_data)
                 else:
-                    create(Badge, badge_data)
+                    DatabaseManager.create(Badge, badge_data)
         # For list-based badges
         else:
             for badge_data in data:
                 badge_id = badge_data.get('id')
                 if badge_id:
-                    existing = get_by_id(Badge, badge_id)
+                    existing = DatabaseManager.get_by_id(Badge, badge_id)
                     if existing:
-                        update(Badge, badge_id, badge_data)
+                        DatabaseManager.update(Badge, badge_id, badge_data)
                     else:
-                        create(Badge, badge_data)
+                        DatabaseManager.create(Badge, badge_data)
     
     elif data_type == 'users':
         for user_data in data:
             user_id = user_data.get('id')
             if user_id:
-                existing = get_by_id(User, user_id)
+                existing = DatabaseManager.get_by_id(User, user_id)
                 if existing:
-                    update(User, user_id, user_data)
+                    DatabaseManager.update(User, user_id, user_data)
                 else:
-                    create(User, user_data)
+                    DatabaseManager.create(User, user_data)
     
     elif data_type == 'teams':
         for team_data in data:
             team_id = team_data.get('id')
             if team_id:
-                existing = get_by_id(Team, team_id)
+                existing = DatabaseManager.get_by_id(Team, team_id)
                 if existing:
-                    update(Team, team_id, team_data)
+                    DatabaseManager.update(Team, team_id, team_data)
                 else:
-                    create(Team, team_data)
+                    DatabaseManager.create(Team, team_data)
     
     elif data_type == 'awards':
         for award_data in data:
             award_id = award_data.get('id')
             if award_id:
-                existing = get_by_id(BadgeAward, award_id)
+                existing = DatabaseManager.get_by_id(BadgeAward, award_id)
                 if existing:
-                    update(BadgeAward, award_id, award_data)
+                    DatabaseManager.update(BadgeAward, award_id, award_data)
                 else:
-                    create(BadgeAward, award_data)
+                    DatabaseManager.create(BadgeAward, award_data)
     
     elif data_type == 'sprints':
         for sprint_data in data:
             sprint_id = sprint_data.get('id')
             if sprint_id:
-                existing = get_by_id(Sprint, sprint_id)
+                existing = DatabaseManager.get_by_id(Sprint, sprint_id)
                 if existing:
-                    update(Sprint, sprint_id, sprint_data)
+                    DatabaseManager.update(Sprint, sprint_id, sprint_data)
                 else:
-                    create(Sprint, sprint_data)
+                    DatabaseManager.create(Sprint, sprint_data)
 
 def get_user_by_id(user_id):
     """Get a user by their ID"""
-    return get_by_id(User, user_id)
+    return DatabaseManager.get_by_id(User, user_id)
 
 def get_badge_by_id(badge_id):
     """Get a badge by its ID"""
-    return get_by_id(Badge, badge_id)
+    return DatabaseManager.get_by_id(Badge, badge_id)
 
 def get_team_by_id(team_id):
     """Get a team by its ID"""
-    return get_by_id(Team, team_id)
+    return DatabaseManager.get_by_id(Team, team_id)
 
 def get_user_badges(user_id):
     """Get all badges for a specific user"""
-    awards = db_get_user_badges(user_id)
+    awards = GamificationQueries.get_user_badges(user_id)
     
     result = []
     for award in awards:
@@ -203,7 +124,7 @@ def get_user_badges(user_id):
 
 def get_team_members(team_id):
     """Get all members of a specific team"""
-    return db_get_team_members(team_id)
+    return GamificationQueries.get_team_members(team_id)
 
 def generate_unique_id(prefix=""):
     """Generate a unique ID based on timestamp"""
@@ -269,12 +190,12 @@ def filter_badges_by_role(badges, role):
 
 def get_current_sprint():
     """Get the current active sprint"""
-    active_sprints = get_active_sprints()
+    active_sprints = GamificationQueries.get_active_sprints()
     if active_sprints:
         return active_sprints[0]
     
     # If no active sprint, get all sprints and find the most recent
-    all_sprints = get_all(Sprint)
+    all_sprints = DatabaseManager.get_all(Sprint)
     if all_sprints:
         return sorted(all_sprints, key=lambda x: x.get('end_date', ''), reverse=True)[0]
     
@@ -283,7 +204,7 @@ def get_current_sprint():
 def calculate_team_stats(team_id):
     """Calculate statistics for a team"""
     team_members = get_team_members(team_id)
-    awards = get_all(BadgeAward)
+    awards = DatabaseManager.get_all(BadgeAward)
     
     total_badges = 0
     badges_per_member = {}
