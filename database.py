@@ -83,9 +83,11 @@ class Badge(Base):
     name = Column(String(100), unique=True, nullable=False)
     description = Column(Text)
     category = Column(String(50))
-    criteria = Column(Text)
+    how_to_achieve = Column(Text)
     valid_roles = Column(Text)  # JSON stored as string
     validity_days = Column(Integer)
+    expired_at = Column(Text)
+    criteria = Column(Text)
     
     awards = relationship('BadgeAward', back_populates='badge')
 

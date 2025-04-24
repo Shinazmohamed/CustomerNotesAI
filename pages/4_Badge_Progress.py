@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from auth import is_authenticated, get_current_user
-from utils import calculate_badge_progress, get_badge_by_id, filter_badges_by_role
-from datetime import datetime, timedelta
+from utils import calculate_badge_progress, filter_badges_by_role
 
 # Page config
 st.set_page_config(

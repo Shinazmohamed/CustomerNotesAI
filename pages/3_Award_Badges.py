@@ -1,4 +1,6 @@
 import streamlit as st
+
+from database import BadgeAward, DatabaseManager
 # Page config must be the first Streamlit command
 st.set_page_config(
     page_title="Award Badges - IT Team Gamification",
@@ -151,6 +153,7 @@ with tab1:
                         }
                         
                         # Add to awards
+                        DatabaseManager.create(BadgeAward, award)
                         awards = st.session_state.awards
                         awards.append(award)
                         st.session_state.awards = awards
