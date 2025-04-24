@@ -1,6 +1,7 @@
+import json
 import streamlit as st
 
-from database import BadgeAward, DatabaseManager
+from database import Badge, BadgeAward, DatabaseManager
 # Page config must be the first Streamlit command
 st.set_page_config(
     page_title="Award Badges - IT Team Gamification",
@@ -14,7 +15,7 @@ if 'authenticated' not in st.session_state:
 if 'current_user' not in st.session_state:
     st.session_state.current_user = None
 if 'badges' not in st.session_state:
-    st.session_state.badges = {}
+    st.session_state.badges = DatabaseManager.get_all(Badge)
 if 'awards' not in st.session_state:
     st.session_state.awards = []
 if 'sprints' not in st.session_state:
@@ -66,10 +67,14 @@ with tab1:
         
         # Select badge
         badges = st.session_state.badges
-        
+
         # Filter badges by role
-        eligible_badges = {b_id: b for b_id, b in badges.items() 
-                           if selected_member['role'] in b.get('eligible_roles', [])}
+        eligible_badges = {
+            b_id: b for b_id, b in badges.items()
+            if selected_member['role'] in (
+                json.loads(b['valid_roles']) if isinstance(b['valid_roles'], str) else b['valid_roles']
+            )
+        }
         
         if eligible_badges:
             # Create badge options
@@ -97,14 +102,14 @@ with tab1:
                               if a['user_id'] == selected_member_id and a['badge_id'] == selected_badge_id]
                 
                 if user_awards:
-                    st.warning(f"Note: {selected_member['name']} already has this badge (awarded on {user_awards[0].get('award_date', 'unknown date')})")
+                    st.warning(f"Note: {selected_member['name']} already has this badge (awarded on {user_awards[0].get('awarded_at', 'unknown date')})")
                 
                 # Award reason
                 reason = st.text_area("Reason for Awarding", 
                                       placeholder="Explain why you're awarding this badge...")
                 
                 # Award date
-                award_date = st.date_input("Award Date", datetime.now())
+                awarded_at = st.date_input("Award Date", datetime.now())
                 
                 # Work/Objective attribution
                 col1, col2 = st.columns(2)
@@ -145,7 +150,7 @@ with tab1:
                             'user_id': selected_member_id,
                             'badge_id': selected_badge_id,
                             'awarded_by': user['id'],
-                            'award_date': award_date.strftime("%Y-%m-%d"),
+                            'awarded_at': awarded_at.strftime("%Y-%m-%d"),
                             'reason': reason,
                             'badge_type': 'work' if attribution == "Regular Work (80%)" else 'objective',
                             'sprint_id': selected_sprint_id,
@@ -219,17 +224,17 @@ with tab2:
     current_date = datetime.now()
     if time_filter == "This Month":
         start_date = current_date.replace(day=1).strftime("%Y-%m-%d")
-        team_awards = [a for a in team_awards if a.get('award_date', '') >= start_date]
+        team_awards = [a for a in team_awards if a.get('awarded_at', '') >= start_date]
     elif time_filter == "Last Month":
         last_month = current_date.month - 1 if current_date.month > 1 else 12
         last_month_year = current_date.year if current_date.month > 1 else current_date.year - 1
         start_date = datetime(last_month_year, last_month, 1).strftime("%Y-%m-%d")
         end_date = current_date.replace(day=1).strftime("%Y-%m-%d")
-        team_awards = [a for a in team_awards if start_date <= a.get('award_date', '') < end_date]
+        team_awards = [a for a in team_awards if start_date <= a.get('awarded_at', '') < end_date]
     elif time_filter == "This Quarter":
         quarter_start_month = ((current_date.month - 1) // 3) * 3 + 1
         start_date = datetime(current_date.year, quarter_start_month, 1).strftime("%Y-%m-%d")
-        team_awards = [a for a in team_awards if a.get('award_date', '') >= start_date]
+        team_awards = [a for a in team_awards if a.get('awarded_at', '') >= start_date]
     
     # Display awards
     if team_awards:
@@ -242,7 +247,7 @@ with tab2:
             
             if badge and recipient and awarder:
                 award_data.append({
-                    'Date': award.get('award_date', 'N/A'),
+                    'Date': award.get('awarded_at', 'N/A'),
                     'Recipient': recipient['name'],
                     'Badge': badge['name'],
                     'Category': badge['category'],
@@ -268,7 +273,7 @@ with tab2:
             award_id = st.selectbox("Select an award to view details", 
                                   options=[a['id'] for a in team_awards],
                                   format_func=lambda x: next((
-                                      f"{a.get('award_date', 'N/A')} - {get_badge_by_id(a['badge_id'])['name']} to {get_user_by_id(a['user_id'])['name']}" 
+                                      f"{a.get('awarded_at', 'N/A')} - {get_badge_by_id(a['badge_id'])['name']} to {get_user_by_id(a['user_id'])['name']}" 
                                       for a in team_awards if a['id'] == x), x))
             
             if award_id:
@@ -279,7 +284,7 @@ with tab2:
                     awarder = get_user_by_id(selected_award['awarded_by'])
                     
                     with st.expander("Award Details", expanded=True):
-                        st.write(f"**Date:** {selected_award.get('award_date', 'N/A')}")
+                        st.write(f"**Date:** {selected_award.get('awarded_at', 'N/A')}")
                         st.write(f"**Badge:** {badge['name']} ({badge['category']})")
                         st.write(f"**Awarded to:** {recipient['name']} ({recipient['role']})")
                         st.write(f"**Awarded by:** {awarder['name']}")

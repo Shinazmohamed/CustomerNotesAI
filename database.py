@@ -105,14 +105,16 @@ class BadgeAward(Base):
     badge_id = Column(String(36), ForeignKey('badges.id'), nullable=False)
     awarded_at = Column(Date, default=datetime.utcnow)
     awarded_by = Column(String(36), ForeignKey('users.id'))
+    reason = Column(Text)
+    badge_type = Column(Text)
+    sprint_id = Column(String(36), ForeignKey('sprints.id')) 
+    recent = Column(Boolean)
     
-    # Explicit foreign key specifications
-    user = relationship('User', 
-                       back_populates='badges',
-                       foreign_keys=[user_id])
+    # Relationships
+    user = relationship('User', back_populates='badges', foreign_keys=[user_id])
     badge = relationship('Badge', back_populates='awards')
-    awarded_by_user = relationship('User', 
-                                  foreign_keys=[awarded_by])
+    awarded_by_user = relationship('User', foreign_keys=[awarded_by])
+    sprint = relationship('Sprint', backref='awards') 
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
@@ -123,11 +125,13 @@ class Sprint(Base):
     
     id = Column(String(36), primary_key=True)
     name = Column(String(100), nullable=False)
+    description = Column(Text)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     team_id = Column(String(36), ForeignKey('teams.id'))
     goals = Column(Text)  # JSON stored as string
-    
+    status = Column(String(25))
+
     team = relationship('Team', back_populates='sprints')
 
     def to_dict(self):

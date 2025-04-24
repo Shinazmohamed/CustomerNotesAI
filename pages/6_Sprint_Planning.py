@@ -1,8 +1,10 @@
+import json
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta, date
 from auth import is_authenticated, get_current_user, user_has_access
+from database import DatabaseManager, Sprint
 from utils import generate_unique_id, get_team_by_id, get_current_sprint
 
 # Page config
@@ -434,11 +436,12 @@ with tab3:
                     'start_date': start_date.strftime("%Y-%m-%d"),
                     'end_date': end_date.strftime("%Y-%m-%d"),
                     'team_id': team_id,
-                    'goals': goals,
+                    'goals': json.dumps(goals),
                     'status': 'upcoming'  # Default to upcoming
                 }
                 
                 # Add to sprints
+                DatabaseManager.create(Sprint, new_sprint)
                 sprints = st.session_state.sprints
                 sprints.append(new_sprint)
                 st.session_state.sprints = sprints
