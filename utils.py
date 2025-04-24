@@ -186,7 +186,7 @@ def filter_badges_by_role(badges, role):
     else:
         badges_list = badges
     
-    return [b for b in badges_list if role in b.get('eligible_roles', [])]
+    return [b for b in badges_list if role in b.get('valid_roles', [])]
 
 def get_current_sprint():
     """Get the current active sprint"""

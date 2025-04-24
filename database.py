@@ -216,6 +216,45 @@ class DatabaseManager:
             return None
         finally:
             session.close()
+            
+    @staticmethod
+    def filter_by(model_class, **filters):
+        try:
+            all_items = DatabaseManager.get_all(model_class)
+
+            if isinstance(all_items, dict):
+                all_items = list(all_items.values())
+            elif not isinstance(all_items, list):
+                raise ValueError("Unsupported data format. Expected list or dict.")
+
+            filtered_items = []
+
+            for item in all_items:
+                if not isinstance(item, dict):
+                    continue
+
+                match = True
+                for key, value in filters.items():
+                    item_value = item.get(key)
+
+                    if isinstance(value, list):
+                        if item_value not in value:
+                            match = False
+                            break
+                    else:
+                        if item_value != value:
+                            match = False
+                            break
+
+                if match:
+                    filtered_items.append(item)
+
+            return filtered_items
+
+        except Exception as e:
+            print(f"[filter_by] Error: {e}")
+            return []
+
 
 # Business Logic Helpers
 class GamificationQueries:

@@ -51,7 +51,8 @@ with tab1:
     st.subheader("Award a New Badge")
     
     # Select team member
-    team_members = get_team_members(user['team_id'])
+    team_members = [m for m in get_team_members(user['team_id']) if m['id'] != user['id']]
+
     team_members_options = [{'label': m['name'], 'value': m['id']} for m in team_members]
     
     selected_member_id = st.selectbox(
@@ -98,11 +99,14 @@ with tab1:
                     st.write(f"**How to Achieve:** {selected_badge.get('how_to_achieve', 'Not specified')}")
                 
                 # Check if user already has this badge
-                user_awards = [a for a in st.session_state.awards 
-                              if a['user_id'] == selected_member_id and a['badge_id'] == selected_badge_id]
-                
-                if user_awards:
-                    st.warning(f"Note: {selected_member['name']} already has this badge (awarded on {user_awards[0].get('awarded_at', 'unknown date')})")
+                filtered_awards = DatabaseManager.filter_by(
+                    BadgeAward,
+                    user_id = selected_member_id,
+                    badge_id = selected_badge_id
+                )
+
+                if filtered_awards:
+                    st.warning(f"Note: {selected_member['name']} already has this badge (awarded on {filtered_awards[0].get('awarded_at', 'unknown date')})")
                 
                 # Award reason
                 reason = st.text_area("Reason for Awarding", 
@@ -260,6 +264,7 @@ with tab2:
         
         if not award_df.empty:
             # Sort by date (newest first)
+            award_df['Date'] = pd.to_datetime(award_df['Date'], errors='coerce')
             award_df = award_df.sort_values('Date', ascending=False)
             
             # Display table
