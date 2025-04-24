@@ -184,7 +184,12 @@ st.subheader("Team Leaderboard")
 # Get all team members
 from database import BadgeAward, DatabaseManager
 from utils import get_team_members
-team_members = get_team_members(team['id'])
+
+team_members = [
+    m for m in get_team_members(team['id']) 
+    if m['role'].lower() not in ['tl', 'rmo', 'manager']
+]
+
 
 # Calculate badge counts for each member
 leaderboard_data = []
