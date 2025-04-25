@@ -106,7 +106,6 @@ class BadgeAward(Base):
     awarded_at = Column(Date, default=datetime.utcnow)
     awarded_by = Column(String(36), ForeignKey('users.id'))
     reason = Column(Text)
-    badge_type = Column(Text)
     sprint_id = Column(String(36), ForeignKey('sprints.id')) 
     recent = Column(Boolean)
     
