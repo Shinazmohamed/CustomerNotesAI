@@ -3,8 +3,8 @@ import pandas as pd
 import plotly.express as px
 from auth import is_authenticated, get_current_user, user_has_access
 from utils import get_team_by_id, generate_unique_id, get_team_members, calculate_team_stats
-from database import DatabaseManager, Team, User
-
+from models import Team, User
+from crud.db_manager import DatabaseManager
 # Page config
 st.set_page_config(
     page_title="Teams - IT Team Gamification",

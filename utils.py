@@ -1,9 +1,13 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta, date
-from database import (
-    User, Team, Badge, BadgeAward, Sprint, DatabaseManager, GamificationQueries
-)
+from models.team import Team
+from models.user import User
+from models.badge import Badge
+from models.sprint import Sprint
+from models.badge_award import BadgeAward
+from crud.db_manager import DatabaseManager
+from queries.gamification_queries import GamificationQueries
 
 def load_data(data_type):
     if data_type == 'badges':
@@ -186,7 +190,7 @@ def filter_badges_by_role(badges, role):
     else:
         badges_list = badges
     
-    return [b for b in badges_list if role in b.get('valid_roles', [])]
+    return [b for b in badges_list if role in b.get('eligible_roles', [])]
 
 def get_current_sprint():
     """Get the current active sprint"""

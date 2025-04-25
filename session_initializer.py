@@ -1,5 +1,10 @@
 import streamlit as st
-from database import Badge, User, Team, BadgeAward, Sprint, DatabaseManager
+from models.team import Team
+from models.user import User
+from models.badge import Badge
+from models.sprint import Sprint
+from models.badge_award import BadgeAward
+from crud.db_manager import DatabaseManager
 
 def initialize_app_data():
     if 'teams' not in st.session_state:

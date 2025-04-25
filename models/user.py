@@ -1,102 +1,35 @@
-class User:
-    """
-    User class representing an employee in the gamification system.
+from sqlalchemy import Column, String, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+from db_base import Base
+import hashlib
+
+class User(Base):
+    __tablename__ = 'users'
+    __table_args__ = {'extend_existing': True}
     
-    Attributes:
-        id (str): Unique identifier for the user
-        name (str): Full name of the user
-        username (str): Username for login
-        password (str): Password for login (in a real system, this would be hashed)
-        email (str): Email address of the user
-        role (str): Role of the user (Dev, QA, RMO, TL, Manager)
-        team_id (str): ID of the team the user belongs to
-        is_lead (bool): Whether the user is a team lead
-    """
-    
-    def __init__(self, user_id, name, username, password, email=None,
-                 role="Dev", team_id=None, is_lead=False):
-        """
-        Initialize a new User object.
-        
-        Args:
-            user_id (str): Unique identifier for the user
-            name (str): Full name of the user
-            username (str): Username for login
-            password (str): Password for login
-            email (str, optional): Email address of the user
-            role (str, optional): Role of the user
-            team_id (str, optional): ID of the team the user belongs to
-            is_lead (bool, optional): Whether the user is a team lead
-        """
-        self.id = user_id
-        self.name = name
-        self.username = username
-        self.password = password  # In a real app, this would be hashed
-        self.email = email or ""
-        self.role = role
-        self.team_id = team_id
-        self.is_lead = is_lead
-        
-        # Additional attributes for UI display
-        self.next_badge_progress = 0
-        self.team_rank = "N/A"
-    
+    id = Column(String(36), primary_key=True)
+    name = Column(String(255), nullable=False)
+    username = Column(String(50), unique=True, nullable=False)
+    password = Column(String(100), nullable=False)
+    email = Column(String(100))
+    role = Column(String(50), default='Developer', nullable=False)
+    team_id = Column(String(36), ForeignKey('teams.id'))
+    is_lead = Column(Boolean, default=False)
+
+    team = relationship('Team', back_populates='members')
+    badges = relationship('BadgeAward', back_populates='user', foreign_keys='BadgeAward.user_id')
+
+    # Optional runtime-only fields
+    next_badge_progress = 0
+    team_rank = "N/A"
+
     def to_dict(self):
-        """
-        Convert the User object to a dictionary.
-        
-        Returns:
-            dict: Dictionary representation of the user
-        """
-        return {
-            'id': self.id,
-            'name': self.name,
-            'username': self.username,
-            'password': self.password,
-            'email': self.email,
-            'role': self.role,
-            'team_id': self.team_id,
-            'is_lead': self.is_lead,
-            'next_badge_progress': self.next_badge_progress,
-            'team_rank': self.team_rank
-        }
-    
-    @classmethod
-    def from_dict(cls, data):
-        """
-        Create a User object from a dictionary.
-        
-        Args:
-            data (dict): Dictionary containing user data
-            
-        Returns:
-            User: New User object
-        """
-        user = cls(
-            user_id=data.get('id'),
-            name=data.get('name'),
-            username=data.get('username'),
-            password=data.get('password'),
-            email=data.get('email'),
-            role=data.get('role', 'Dev'),
-            team_id=data.get('team_id'),
-            is_lead=data.get('is_lead', False)
-        )
-        user.next_badge_progress = data.get('next_badge_progress', 0)
-        user.team_rank = data.get('team_rank', 'N/A')
-        return user
-    
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+    def hash_password(self, password):
+        return hashlib.sha256(password.encode()).hexdigest()
+
     def has_permission(self, feature):
-        """
-        Check if the user has permission for a specific feature.
-        
-        Args:
-            feature (str): Name of the feature to check
-            
-        Returns:
-            bool: Whether the user has permission
-        """
-        # Define access rules for different features
         access_rules = {
             'award_badges': ['TL', 'Manager'],
             'create_badges': ['TL', 'Manager'],
@@ -105,9 +38,13 @@ class User:
             'view_reports': ['TL', 'Manager', 'Dev', 'QA', 'RMO'],
             'export_data': ['TL', 'Manager']
         }
-        
-        if feature in access_rules:
-            return self.role in access_rules[feature]
-        
-        # Default to not having access if feature not defined
-        return False
+        return self.role in access_rules.get(feature, [])
+
+    def update_user(self, name=None, username=None, password=None, email=None, role=None, team_id=None, is_lead=None):
+        if name: self.name = name
+        if username: self.username = username
+        if password: self.password = self.hash_password(password)
+        if email: self.email = email
+        if role: self.role = role
+        if team_id: self.team_id = team_id
+        if is_lead is not None: self.is_lead = is_lead

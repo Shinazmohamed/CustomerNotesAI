@@ -1,6 +1,8 @@
 import json
 import streamlit as st
-from database import Badge, DatabaseManager
+from crud.db_manager import DatabaseManager
+from models.badge import Badge  # Add this import
+
 # Page config must be the first Streamlit command
 st.set_page_config(
     page_title="Badge Management - IT Team Gamification",
@@ -14,9 +16,13 @@ if 'authenticated' not in st.session_state:
 if 'current_user' not in st.session_state:
     st.session_state.current_user = None
 if 'badges' not in st.session_state:
-    st.session_state.badges = {}
+    # Get badges from database
+    badges = DatabaseManager.get_all(Badge)
+    st.session_state.badges = badges if badges else []
 if 'badge_to_edit' not in st.session_state:
     st.session_state.badge_to_edit = None
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = "View Badges"
 
 import pandas as pd
 from auth import is_authenticated, get_current_user, user_has_access
@@ -33,16 +39,17 @@ user = get_current_user()
 st.title("📝 Badge Management")
 st.write("Create, edit, and manage badges for your team.")
 
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
-if 'current_user' not in st.session_state:
-    st.session_state.current_user = None
-if 'badges' not in st.session_state:
-    st.session_state.badges = {}
-if 'badge_to_edit' not in st.session_state:
-    st.session_state.badge_to_edit = None
-if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = "View Badges"
+# Remove duplicate session state initialization here
+# if 'authenticated' not in st.session_state:
+#     st.session_state.authenticated = False
+# if 'current_user' not in st.session_state:
+#     st.session_state.current_user = None
+# if 'badges' not in st.session_state:
+#     st.session_state.badges = {}
+# if 'badge_to_edit' not in st.session_state:
+#     st.session_state.badge_to_edit = None
+# if 'active_tab' not in st.session_state:
+#     st.session_state.active_tab = "View Badges"
 
 # Tab layout
 tabs = ["View Badges", "Create/Edit Badge"]
@@ -63,8 +70,9 @@ if st.session_state.active_tab == "View Badges":
     
     with col1:
         # Filter by category
+        # Get unique categories from badges list
         categories = ['All']
-        for badge in st.session_state.badges.values():
+        for badge in st.session_state.badges:
             if badge['category'] not in categories:
                 categories.append(badge['category'])
         
@@ -82,9 +90,8 @@ if st.session_state.active_tab == "View Badges":
     
     # Get badges and apply filters
     badges = st.session_state.badges
-    
-    # Convert badge dictionary to list for filtering
-    badge_list = list(badges.values())
+    # No need to convert to list since badges is already a list
+    badge_list = badges
     
     # Apply category filter
     if selected_category != 'All':
@@ -92,12 +99,12 @@ if st.session_state.active_tab == "View Badges":
     
     # Apply role filter
     if selected_role != 'All':
-        badge_list = [b for b in badge_list if selected_role in b.get('valid_roles', [])]
+        badge_list = [b for b in badge_list if selected_role in b.get('eligible_roles', [])]
     
     # Apply type filter
-    if selected_type != 'All':
+    if selected_type != 'All':  # Use selected_type instead of selected_badge_type
         type_key = selected_type.lower()
-        badge_list = [b for b in badge_list if b.get('criteria', '').lower() == type_key]
+        badge_list = [b for b in badge_list if b.get('badge_type', '').lower() == type_key]
     
     # Display badges
     if badge_list:
@@ -107,9 +114,9 @@ if st.session_state.active_tab == "View Badges":
                 'Name': badge['name'],
                 'Category': badge['category'],
                 'Description': badge['description'],
-                'Eligible Roles': ', '.join(json.loads(badge.get('valid_roles', '[]')) if isinstance(badge.get('valid_roles'), str) else badge.get('valid_roles', [])),
-                'Expected Time (days)': badge.get('validity_days', 'N/A'),
-                'Type': badge.get('criteria', 'N/A').capitalize(),
+                'Eligible Roles': ', '.join(json.loads(badge.get('eligible_roles', '[]')) if isinstance(badge.get('eligible_roles'), str) else badge.get('eligible_roles', [])),
+                'Expected Time (days)': badge.get('expected_time_days', 'N/A'),
+                'Type': badge.get('badge_type', 'N/A').capitalize(),
                 'ID': badge['id']
             }
             for badge in badge_list
@@ -138,16 +145,16 @@ if st.session_state.active_tab == "View Badges":
                     st.write(f"**Category:** {selected_badge['category']}")
                     st.write(f"**Description:** {selected_badge['description']}")
                     st.write(f"**How to Achieve:** {selected_badge.get('how_to_achieve', 'Not specified')}")
-                    roles = selected_badge.get('valid_roles', [])
+                    roles = selected_badge.get('eligible_roles', [])
                     if isinstance(roles, str):
                         try:
                             roles = json.loads(roles)
                         except json.JSONDecodeError:
                             roles = []
                     st.write(f"**Eligible Roles:** {', '.join(roles)}")
-                    st.write(f"**Expected Time:** {selected_badge.get('validity_days', 'N/A')} days")
-                    st.write(f"**Expiry Date:** {selected_badge.get('expired_at', 'Permanent')}")
-                    st.write(f"**Type:** {selected_badge.get('criteria', 'N/A').capitalize()}")
+                    st.write(f"**Expected Time:** {selected_badge.get('expected_time_days', 'N/A')} days")
+                    st.write(f"**Expiry Date:** {selected_badge.get('validity', 'Permanent')}")
+                    st.write(f"**Type:** {selected_badge.get('badge_type', 'N/A').capitalize()}")
                     
                     # Edit button
                     if user_has_access('create_badges'):
@@ -179,10 +186,10 @@ elif st.session_state.active_tab == "Create/Edit Badge":
             'description': '',
             'category': '',
             'how_to_achieve': '',
-            'valid_roles': [],
-            'validity_days': 30,
-            'expired_at': 'Permanent',
-            'criteria': 'work'
+            'eligible_roles': [],
+            'expected_time_days': 30,
+            'validity': 'Permanent',
+            'badge_type': 'work'
         }
     
     # Badge form
@@ -199,36 +206,36 @@ elif st.session_state.active_tab == "Create/Edit Badge":
                 index=['Technical', 'Leadership', 'Teamwork', 'Innovation', 'Process', 'Other'].index(badge['category']) if badge['category'] in ['Technical', 'Leadership', 'Teamwork', 'Innovation', 'Process', 'Other'] else 0
             )
             
-            valid_roles = st.multiselect(
+            eligible_roles = st.multiselect(
                 "Eligible Roles",
                 ['Dev', 'QA', 'RMO', 'TL'],
-                default=badge.get('valid_roles', [])
+                default=badge.get('eligible_roles', [])
             )
         
         with col2:
             how_to_achieve = st.text_area("How to Achieve", value=badge.get('how_to_achieve', ''))
             
-            validity_time = st.number_input(
+            expected_time_days = st.number_input(
                 "Validity Time (days)",
                 min_value=1,
                 max_value=365,
-                value=badge.get('validity_days', 30)
+                value=badge.get('expected_time_days', 30)
             )
         
         col3, col4 = st.columns(2)
         
         with col3:
-            expired_at = st.selectbox(
+            validity = st.selectbox(
                 "Expiry Date",
                 ['Permanent', '1 Month', '3 Months', '6 Months', '1 Year'],
-                index=['Permanent', '1 Month', '3 Months', '6 Months', '1 Year'].index(badge.get('expired_at', 'Permanent')) if badge.get('expired_at', 'Permanent') in ['Permanent', '1 Month', '3 Months', '6 Months', '1 Year'] else 0
+                index=['Permanent', '1 Month', '3 Months', '6 Months', '1 Year'].index(badge.get('validity', 'Permanent')) if badge.get('validity', 'Permanent') in ['Permanent', '1 Month', '3 Months', '6 Months', '1 Year'] else 0
             )
         
         with col4:
-            criteria = st.selectbox(
+            badge_type = st.selectbox(
                 "Badge Type",
                 ['Work', 'Objective'],
-                index=['Work', 'Objective'].index(badge.get('criteria', 'work').capitalize()) if badge.get('criteria', 'work').capitalize() in ['Work', 'Objective'] else 0
+                index=['Work', 'Objective'].index(badge.get('badge_type', 'work').capitalize()) if badge.get('badge_type', 'work').capitalize() in ['Work', 'Objective'] else 0
             )
         
         # Submit button
@@ -247,38 +254,43 @@ elif st.session_state.active_tab == "Create/Edit Badge":
                 st.error("Description is required")
             elif not category:
                 st.error("Category is required")
-            elif not valid_roles:
+            elif not eligible_roles:
                 st.error("At least one eligible role is required")
             else:
                 # Prepare badge data
+                # Create badge data dictionary
                 badge_data = {
-                    'id': badge['id'],
+                    'badge_id': badge['id'],
                     'name': name,
                     'description': description,
                     'category': category,
                     'how_to_achieve': how_to_achieve,
-                    'valid_roles': json.dumps(valid_roles),
-                    'validity_days': validity_time,
-                    'expired_at': expired_at,
-                    'criteria': criteria.lower()
+                    'eligible_roles': json.dumps(eligible_roles),  # Convert list to JSON string
+                    'expected_time_days': expected_time_days,
+                    'validity': validity,
+                    'badge_type': badge_type.lower()
                 }
                 
-                # Save to session state
-                badges = st.session_state.badges
-                badges[badge_data['id']] = badge_data
-                st.session_state.badges = badges
-                
-                # Reset form if creating new badge
-                if not editing:
-                    DatabaseManager.create(Badge, badge_data)
-                    st.success("Badge created successfully!")
-                else:
+                # Create or update badge
+                if editing:
                     DatabaseManager.update(Badge, badge['id'], badge_data)
-                    st.success("Badge updated successfully!")
+                    # Update session state badges after update
+                    badges = DatabaseManager.get_all(Badge)
+                    st.session_state.badges = badges if badges else []
+                    st.success(f"Badge '{name}' updated successfully!")
+                    # Clear edit state after successful update
+                    st.session_state.badge_to_edit = None
+                else:
+                    new_badge = DatabaseManager.create(Badge, badge_data)
+                    # Update session state badges after creation
+                    badges = DatabaseManager.get_all(Badge)
+                    st.session_state.badges = badges if badges else []
+                    st.success(f"Badge '{name}' created successfully!")
                     # Clear edit state
                     st.session_state.badge_to_edit = None
                 
-                # Rerun app to refresh
+                # Switch back to view tab and force a rerun to clear the form
+                st.session_state.active_tab = "View Badges"
                 st.rerun()
     
     # Cancel edit button

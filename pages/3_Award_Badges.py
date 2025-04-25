@@ -1,7 +1,8 @@
 import json
 import streamlit as st
-
-from database import Badge, BadgeAward, DatabaseManager
+from crud.db_manager import DatabaseManager
+from models.badge import Badge
+from models.badge_award import BadgeAward
 # Page config must be the first Streamlit command
 st.set_page_config(
     page_title="Award Badges - IT Team Gamification",
@@ -70,21 +71,21 @@ with tab1:
         badges = st.session_state.badges
 
         # Filter badges by role
-        eligible_badges = {
-            b_id: b for b_id, b in badges.items()
+        eligible_badges = [
+            b for b in badges
             if selected_member['role'] in (
-                json.loads(b['valid_roles']) if isinstance(b['valid_roles'], str) else b['valid_roles']
+                json.loads(b['eligible_roles']) if isinstance(b['eligible_roles'], str) else b['eligible_roles']
             )
-        }
+        ]
         
         if eligible_badges:
             # Create badge options
             badge_options = [{'label': f"{b['name']} ({b['category']})", 'value': b['id']} 
-                            for b in eligible_badges.values()]
+                            for b in eligible_badges]
             
             selected_badge_id = st.selectbox(
                 "Select Badge to Award",
-                options=[b['id'] for b in eligible_badges.values()],
+                options=[b['id'] for b in eligible_badges],
                 format_func=lambda x: next((b['label'] for b in badge_options if b['value'] == x), x)
             )
             
