@@ -1,11 +1,17 @@
 import json
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import plotly.express as px  # Fixed the syntax error here
+from crud.db_manager import DatabaseManager
+from models.sprint import Sprint
 from datetime import datetime, timedelta, date
 from auth import is_authenticated, get_current_user, user_has_access
-from database import DatabaseManager, Sprint
 from utils import generate_unique_id, get_team_by_id, get_current_sprint
+
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
 
 # Page config
 st.set_page_config(
@@ -76,7 +82,7 @@ with tab1:
         with col4:
             # Count badges awarded in this sprint
             sprint_badges = [a for a in st.session_state.awards 
-                            if a.get('sprint_id') == current_sprint['id']]
+                            if a.get('id') == current_sprint['id']]
             st.metric("Badges Awarded", len(sprint_badges))
         
         # Sprint description
@@ -207,7 +213,7 @@ with tab2:
         
         for sprint in completed_sprints:
             # Count badge awards in this sprint
-            sprint_badges = [a for a in st.session_state.awards if a.get('sprint_id') == sprint['id']]
+            sprint_badges = [a for a in st.session_state.awards if a.get('id') == sprint['id']]
             
             sprint_data.append({
                 'Sprint': sprint['name'],
@@ -226,16 +232,16 @@ with tab2:
         # Sprint details
         st.subheader("Sprint Details")
         
-        selected_sprint_id = st.selectbox(
+        selected_id = st.selectbox(
             "Select Sprint to View Details",
             options=[s['id'] for s in completed_sprints],
             format_func=lambda x: next((f"{s['name']} ({s.get('start_date', 'N/A')} to {s.get('end_date', 'N/A')})" 
                                       for s in completed_sprints if s['id'] == x), x)
         )
         
-        if selected_sprint_id:
+        if selected_id:
             # Get sprint details
-            selected_sprint = next((s for s in completed_sprints if s['id'] == selected_sprint_id), None)
+            selected_sprint = next((s for s in completed_sprints if s['id'] == selected_id), None)
             
             if selected_sprint:
                 with st.expander(f"Details for {selected_sprint['name']}", expanded=True):
@@ -257,7 +263,7 @@ with tab2:
                 st.subheader("Badge Awards")
                 
                 # Get awards for this sprint
-                sprint_badges = [a for a in st.session_state.awards if a.get('sprint_id') == selected_sprint_id]
+                sprint_badges = [a for a in st.session_state.awards if a.get('id') == selected_id]
                 
                 if sprint_badges:
                     # Create badge award data
@@ -308,127 +314,93 @@ with tab2:
 with tab3:
     st.subheader("Sprint Management")
     
-    # Check if user has permission to manage sprints
     if not can_manage_sprints:
         st.warning("You don't have permission to manage sprints.")
         st.stop()
-    
-    # Current sprints overview
+
     st.write("### Active and Upcoming Sprints")
     
-    # Get all sprints
     sprints = st.session_state.sprints
     
-    # Filter active and upcoming sprints
     active_sprints = [s for s in sprints if s.get('status') == 'active']
     upcoming_sprints = [s for s in sprints if s.get('status') == 'upcoming']
-    
-    # Display active sprints
+
     if active_sprints:
         st.write("#### Active Sprints")
-        
         for sprint in active_sprints:
             with st.expander(f"{sprint['name']} - Active", expanded=True):
                 st.write(f"**Timeline:** {sprint.get('start_date', 'N/A')} to {sprint.get('end_date', 'N/A')}")
                 st.write(f"**Description:** {sprint.get('description', 'No description available.')}")
-                
-                # Complete sprint button
-                if st.button(f"Mark Sprint {sprint['name']} as Completed", key=f"complete_{sprint['id']}"):
-                    # Update sprint status
-                    for i, s in enumerate(sprints):
-                        if s['id'] == sprint['id']:
-                            sprints[i]['status'] = 'completed'
-                            break
-                    
+
+                if st.button(f"Mark Sprint '{sprint['name']}' as Completed", key=f"complete_{sprint['id']}"):
+                    sprint['status'] = 'completed'
+                    DatabaseManager.update(Sprint, sprint['id'], {"status": "completed"})
                     st.session_state.sprints = sprints
-                    st.success(f"Sprint {sprint['name']} marked as completed.")
+                    st.success(f"Sprint '{sprint['name']}' marked as completed.")
                     st.rerun()
     else:
         st.info("No active sprints.")
-    
-    # Display upcoming sprints
+
     if upcoming_sprints:
         st.write("#### Upcoming Sprints")
-        
         for sprint in upcoming_sprints:
             with st.expander(f"{sprint['name']} - Upcoming", expanded=False):
                 st.write(f"**Timeline:** {sprint.get('start_date', 'N/A')} to {sprint.get('end_date', 'N/A')}")
                 st.write(f"**Description:** {sprint.get('description', 'No description available.')}")
-                
-                # Start sprint button
-                if st.button(f"Start Sprint {sprint['name']}", key=f"start_{sprint['id']}"):
-                    # Update sprint status
-                    for i, s in enumerate(sprints):
-                        if s['id'] == sprint['id']:
-                            sprints[i]['status'] = 'active'
-                            break
-                    
+
+                if st.button(f"Start Sprint '{sprint['name']}'", key=f"start_{sprint['id']}"):
+                    sprint['status'] = 'active'
+                    DatabaseManager.update(Sprint, sprint['id'], {"status": "active"})
                     st.session_state.sprints = sprints
-                    st.success(f"Sprint {sprint['name']} started.")
+                    st.success(f"Sprint '{sprint['name']}' started.")
                     st.rerun()
     else:
         st.info("No upcoming sprints.")
-    
-    # Create new sprint
+
     st.write("### Create New Sprint")
-    
+
     with st.form("create_sprint_form"):
         sprint_name = st.text_input("Sprint Name", placeholder="e.g., Sprint 23")
         sprint_desc = st.text_area("Description", placeholder="Sprint goals and focus areas...")
-        
-        # Date range
+
         col1, col2 = st.columns(2)
-        
+        today = datetime.now()
+
         with col1:
-            # Default to next Monday for start date
-            today = datetime.now()
-            days_until_monday = (7 - today.weekday()) % 7
-            if days_until_monday == 0:
-                days_until_monday = 7
-            next_monday = today + timedelta(days=days_until_monday)
-            
+            next_monday = today + timedelta(days=(7 - today.weekday()) % 7 or 7)
             start_date = st.date_input("Start Date", value=next_monday)
-        
+
         with col2:
-            # Default to 2 weeks after start
             default_end = start_date + timedelta(days=13)
             end_date = st.date_input("End Date", value=default_end)
-        
-        # Sprint goals
+
         st.write("Sprint Goals (Add up to 5)")
-        
         goals = []
         for i in range(5):
             goal = st.text_input(f"Goal {i+1}", key=f"goal_{i}")
-            if goal:
-                goals.append(goal)
-        
-        # Team association
-        team_id = user['team_id']  # Default to user's team
-        
-        # If user is a manager, allow selecting any team
+            if goal.strip():
+                goals.append(goal.strip())
+
+        team_id = user['team_id']
+
         if user['role'] == 'Manager':
             teams = st.session_state.teams
             team_options = [{'label': t['name'], 'value': t['id']} for t in teams]
-            
             team_id = st.selectbox(
                 "Team",
                 options=[t['id'] for t in teams],
                 index=next((i for i, t in enumerate(teams) if t['id'] == team_id), 0),
                 format_func=lambda x: next((t['label'] for t in team_options if t['value'] == x), x)
             )
-        
-        # Submit button
+
         submitted = st.form_submit_button("Create Sprint")
-        
+
         if submitted:
-            # Validate form
             if not sprint_name:
                 st.error("Sprint name is required.")
             elif start_date >= end_date:
                 st.error("End date must be after start date.")
             else:
-                # Create sprint
                 new_sprint = {
                     'id': generate_unique_id('sprint_'),
                     'name': sprint_name,
@@ -436,15 +408,12 @@ with tab3:
                     'start_date': start_date.strftime("%Y-%m-%d"),
                     'end_date': end_date.strftime("%Y-%m-%d"),
                     'team_id': team_id,
-                    'goals': json.dumps(goals),
-                    'status': 'upcoming'  # Default to upcoming
+                    'goals': goals,  
+                    'status': 'upcoming'
                 }
-                
-                # Add to sprints
+
                 DatabaseManager.create(Sprint, new_sprint)
-                sprints = st.session_state.sprints
-                sprints.append(new_sprint)
-                st.session_state.sprints = sprints
+                st.session_state.sprints.append(new_sprint)
                 
                 st.success(f"Sprint '{sprint_name}' created successfully!")
                 st.rerun()
