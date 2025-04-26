@@ -71,11 +71,11 @@ if st.session_state.active_tab == "View Badges":
     with col1:
         # Filter by category
         # Get unique categories from badges list
-        categories = ['All']
-        for badge in st.session_state.badges:
-            if badge['category'] not in categories:
-                categories.append(badge['category'])
-        
+        badges = st.session_state.badges
+        categories = list({badge['category'] for badge in badges})
+        categories.sort()  # Optional: to sort alphabetically
+        categories.insert(0, "All")  # Add "All" option on top
+
         selected_category = st.selectbox("Filter by Category", categories)
     
     with col2:
@@ -91,7 +91,7 @@ if st.session_state.active_tab == "View Badges":
     # Get badges and apply filters
     badges = st.session_state.badges
     # No need to convert to list since badges is already a list
-    badge_list = badges
+    badge_list = list(badges)
     
     # Apply category filter
     if selected_category != 'All':
@@ -265,11 +265,12 @@ elif st.session_state.active_tab == "Create/Edit Badge":
                     'description': description,
                     'category': category,
                     'how_to_achieve': how_to_achieve,
-                    'eligible_roles': json.dumps(eligible_roles),  # Convert list to JSON string
+                    'eligible_roles': json.dumps(eligible_roles),  # pass list, don't json.dumps
                     'expected_time_days': expected_time_days,
                     'validity': validity,
                     'badge_type': badge_type.lower()
                 }
+
                 
                 # Create or update badge
                 if editing:
