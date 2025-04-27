@@ -22,12 +22,12 @@ class BadgeAward(Base):
     awarded_by_user = relationship('User', foreign_keys=[awarded_by])
     sprint = relationship('Sprint', backref='awards')
 
-    def __init__(self, award_id, user_id, badge_id, awarded_by,
+    def __init__(self, id, user_id, badge_id, awarded_by,
                  awarded_at=None, reason=None, sprint_id=None):
         if not user_id or not badge_id:
             raise ValueError("Both user_id and badge_id must be provided.")
         
-        self.id = award_id
+        self.id = id
         self.user_id = user_id
         self.badge_id = badge_id
         self.awarded_by = awarded_by
@@ -54,7 +54,7 @@ class BadgeAward(Base):
             raise ValueError("BadgeAward must have user_id and badge_id.")
         
         return cls(
-            award_id=data.get('id'),
+            id=data.get('id'),
             user_id=data.get('user_id'),
             badge_id=data.get('badge_id'),
             awarded_by=data.get('awarded_by', 'System'),
