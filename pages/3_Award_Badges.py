@@ -106,7 +106,7 @@ with tab1:
                 )
                 if filtered_awards:
                     st.warning(f"Note: {selected_member['name']} already has this badge (awarded on {filtered_awards[0].get('awarded_at', 'unknown date')})")
-                    st.stop()
+
                 
                 # Reason
                 reason = st.text_area("Reason for Awarding", placeholder="Explain why you're awarding this badge...")
