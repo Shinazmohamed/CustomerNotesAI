@@ -8,6 +8,7 @@ from models.sprint import Sprint
 from models.badge_award import BadgeAward
 from crud.db_manager import DatabaseManager
 from queries.gamification_queries import GamificationQueries
+import json
 
 def load_data(data_type):
     if data_type == 'badges':
@@ -246,3 +247,11 @@ def calculate_team_stats(team_id):
         'top_performer': top_performer['name'] if top_performer else 'N/A',
         'member_count': len(team_members)
     }
+
+def safe_load_badge(badge):
+    if isinstance(badge, str):
+        try:
+            return json.loads(badge)
+        except json.JSONDecodeError:
+            return None
+    return badge

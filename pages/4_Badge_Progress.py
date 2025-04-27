@@ -3,6 +3,19 @@ import pandas as pd
 import plotly.express as px
 from auth import is_authenticated, get_current_user
 from utils import calculate_badge_progress, filter_badges_by_role
+from crud.db_manager import DatabaseManager
+from models.badge import Badge
+from models.badge_award import BadgeAward
+
+# Initialize session state
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
+if 'badges' not in st.session_state:
+    st.session_state.badges = DatabaseManager.get_all(Badge)
+if 'awards' not in st.session_state:
+    st.session_state.awards = DatabaseManager.get_all(BadgeAward)
 
 # Page config
 st.set_page_config(
@@ -30,15 +43,15 @@ def normalize_criteria(value):
 # Prepare badges
 badges = st.session_state.badges
 user_awards = [a for a in st.session_state.awards if a['user_id'] == user['id']]
-earned_badge_ids = [a['badge_id'] for a in user_awards]
+earned_ids = [a['id'] for a in user_awards]
 eligible_badges = filter_badges_by_role(badges, user['role'])
 
 # Normalize criteria for consistency
 for badge in eligible_badges:
     badge['criteria'] = normalize_criteria(badge.get('criteria', 'work'))
 
-earned_badges = [b for b in eligible_badges if b['id'] in earned_badge_ids]
-unearned_badges = [b for b in eligible_badges if b['id'] not in earned_badge_ids]
+earned_badges = [b for b in eligible_badges if b['id'] in earned_ids]
+unearned_badges = [b for b in eligible_badges if b['id'] not in earned_ids]
 
 # Create tabs
 tab1, tab2 = st.tabs(["Available Badges", "Earned Badges"])
@@ -98,12 +111,12 @@ with tab1:
             )
 
             st.subheader("Badge Details")
-            badge_id = st.selectbox("Select a badge to view details", 
+            id = st.selectbox("Select a badge to view details", 
                 options=[b['id'] for b in filtered_badges],
                 format_func=lambda x: next((b['name'] for b in filtered_badges if b['id'] == x), x)
             )
 
-            selected_badge = next((b for b in filtered_badges if b['id'] == badge_id), None)
+            selected_badge = next((b for b in filtered_badges if b['id'] == id), None)
 
             if selected_badge:
                 progress = calculate_badge_progress(user['id'], selected_badge['id'])
@@ -158,7 +171,7 @@ with tab2:
         if filtered_earned_badges:
             earned_data = []
             for badge in filtered_earned_badges:
-                award = next((a for a in user_awards if a['badge_id'] == badge['id']), None)
+                award = next((a for a in user_awards if a['id'] == badge['id']), None)
                 if award:
                     earned_data.append({
                         'Badge': badge['name'],

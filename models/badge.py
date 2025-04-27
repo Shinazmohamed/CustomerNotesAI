@@ -19,14 +19,14 @@ class Badge(Base):
 
     awards = relationship('BadgeAward', back_populates='badge')
 
-    def __init__(self, badge_id, name, description, category,
+    def __init__(self, id, name, description, category,
                  how_to_achieve=None, eligible_roles=None, 
                  expected_time_days=30, validity="Permanent", 
                  badge_type="work"):
-        if not badge_id or not name:
+        if not id or not name:
             raise ValueError("Badge must have an id and a name.")
         
-        self.id = badge_id
+        self.id = id
         self.name = name
         self.description = description
         self.category = category
