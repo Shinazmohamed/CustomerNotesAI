@@ -1,11 +1,16 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from auth import is_authenticated, get_current_user
-from utils import calculate_badge_progress, filter_badges_by_role
+import json 
+from auth import is_authenticated, get_current_user, user_has_access
+from utils import calculate_badge_progress, get_team_members
 from crud.db_manager import DatabaseManager
 from models.badge import Badge
 from models.badge_award import BadgeAward
+
+# Badge type filtering helper
+def normalize_criteria(value):
+    return value.lower().strip() if isinstance(value, str) else "work"
 
 # Initialize session state
 if 'authenticated' not in st.session_state:
@@ -29,33 +34,54 @@ if not is_authenticated():
     st.warning("Please log in to access this page.")
     st.stop()
 
-# Get current user
-user = get_current_user()
-
 # Page header
 st.title("📊 Badge Progress Tracker")
 st.write("Track your progress towards earning new badges.")
 
-# Badge type filtering helper
-def normalize_criteria(value):
-    return value.lower().strip() if isinstance(value, str) else "work"
+# Get current user
+user = get_current_user()
+is_manager = user['role'] == 'Manager'
+
+# Determine whose progress to show
+if is_manager:
+    col1, = st.columns(1)
+    with col1:
+        all_users = []
+        for t in st.session_state.teams:
+            all_users.extend(get_team_members(t['id']))
+        seen_ids = set()
+        team_members = []
+        for m in all_users:
+            if m['id'] != user['id'] and m['id'] not in seen_ids:
+                team_members.append(m)
+                seen_ids.add(m['id'])
+        team_members_options = [{'label': m['name'], 'value': m['id']} for m in team_members]
+        selected_member_id = st.selectbox(
+            "Select Team Member",
+            options=[m['id'] for m in team_members],
+            format_func=lambda x: next((m['label'] for m in team_members_options if m['value'] == x), x),
+            key="manager_select_member"
+        )
+        selected_member = next((m for m in team_members if m['id'] == selected_member_id), None)
+        progress_user_id = selected_member['id']
+        progress_user_role = selected_member['role']
+else:
+    progress_user_id = user['id']
+    progress_user_role = user['role']
 
 # Prepare badges
 badges = st.session_state.badges
-user_awards = [a for a in st.session_state.awards if a['user_id'] == user['id']]
+user_awards = [a for a in st.session_state.awards if a['user_id'] == progress_user_id]
 earned_ids = [a['badge_id'] for a in user_awards]
 
 # Modified badge filtering
 eligible_badges = []
 for badge_id, badge in badges.items():
     try:
-        # Handle both string and list formats for eligible_roles
         roles = badge.get('eligible_roles', [])
         if isinstance(roles, str):
-            roles = json.loads(roles.replace("'", "\""))  # Handle single quotes
-        
-        # Case-insensitive role matching
-        if user['role'].lower() in [r.lower() for r in roles]:
+            roles = json.loads(roles.replace("'", "\""))
+        if progress_user_role.lower() in [r.lower() for r in roles]:
             badge_dict = badge.copy()
             badge_dict['id'] = badge_id
             eligible_badges.append(badge_dict)
@@ -74,31 +100,24 @@ tab1, tab2 = st.tabs(["Available Badges", "Earned Badges"])
 
 with tab1:
     st.subheader("Badges Available to Earn")
-
     if unearned_badges:
-        col1, col2 = st.columns(2)
-
-        with col1:
+        col2, col3 = st.columns(2)
+        with col2:
             categories = ['All'] + sorted(set(b['category'] for b in unearned_badges))
             selected_category = st.selectbox("Filter by Category", categories, key="unearned_category")
-
-        with col2:
+        with col3:
             badge_types = ['All', 'Work', 'Objective']
             selected_type = st.selectbox("Filter by Type", badge_types, key="unearned_type")
-
         filtered_badges = unearned_badges
-
         if selected_category != 'All':
             filtered_badges = [b for b in filtered_badges if b['category'] == selected_category]
-
         if selected_type != 'All':
             type_key = normalize_criteria(selected_type)
             filtered_badges = [b for b in filtered_badges if b['criteria'] == type_key]
-
         if filtered_badges:
             progress_data = []
             for badge in filtered_badges:
-                progress = calculate_badge_progress(user['id'], badge['id'])
+                progress = calculate_badge_progress(progress_user_id, badge['id'])
                 progress_data.append({
                     'Badge': badge['name'],
                     'Category': badge['category'],
@@ -108,9 +127,7 @@ with tab1:
                     'Type': badge['criteria'].capitalize(),
                     'ID': badge['id']
                 })
-
             progress_df = pd.DataFrame(progress_data).sort_values('Progress', ascending=False)
-
             st.dataframe(
                 progress_df.drop(columns=['ID']),
                 use_container_width=True,
@@ -125,21 +142,17 @@ with tab1:
                     'Description': st.column_config.TextColumn(width="large")
                 }
             )
-
             st.subheader("Badge Details")
             id = st.selectbox("Select a badge to view details", 
                 options=[b['id'] for b in filtered_badges],
                 format_func=lambda x: next((b['name'] for b in filtered_badges if b['id'] == x), x)
             )
-
             selected_badge = next((b for b in filtered_badges if b['id'] == id), None)
-
             if selected_badge:
-                progress = calculate_badge_progress(user['id'], selected_badge['id'])
-                col1, col2 = st.columns([1, 2])
-
-                with col1:
-                    st.subheader("Your Progress")
+                progress = calculate_badge_progress(progress_user_id, selected_badge['id'])
+                col2, col3 = st.columns([1, 2])
+                with col2:
+                    st.subheader("Progress")
                     st.progress(progress / 100)
                     st.write(f"**{progress}%** complete")
                     estimated_days = selected_badge.get('validity_days', 0)
@@ -148,8 +161,7 @@ with tab1:
                         st.write(f"Estimated time to completion: **{remaining_days}** days")
                     else:
                         st.write("**Almost there!** Complete the remaining requirements to earn this badge.")
-
-                with col2:
+                with col3:
                     st.subheader(selected_badge['name'])
                     st.write(f"**Category:** {selected_badge['category']}")
                     st.write(f"**Description:** {selected_badge['description']}")
