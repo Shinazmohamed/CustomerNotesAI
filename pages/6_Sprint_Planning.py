@@ -28,9 +28,6 @@ if not is_authenticated():
 # Get current user
 user = get_current_user()
 
-# Check permissions
-can_manage_sprints = user_has_access('create_sprints')
-
 # Page header
 st.title("🏃‍♂️ Sprint Integration")
 st.write("Plan and track achievements through sprints.")
@@ -314,7 +311,7 @@ with tab2:
 with tab3:
     st.subheader("Sprint Management")
     
-    if not can_manage_sprints:
+    if not user_has_access('create_sprints'):
         st.warning("You don't have permission to manage sprints.")
         st.stop()
 

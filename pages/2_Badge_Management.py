@@ -47,6 +47,10 @@ if tab_selection != st.session_state.active_tab:
 
 # ---- VIEW BADGES TAB ----
 if st.session_state.active_tab == "View Badges":
+    if not user_has_access('view_badges'):
+        st.warning("You don't have permission to create or edit badges.")
+        st.stop()
+
     st.subheader("Available Badges")
 
     # Filters
@@ -130,7 +134,7 @@ elif st.session_state.active_tab == "Create/Edit Badge":
     if not user_has_access('create_badges'):
         st.warning("You don't have permission to create or edit badges.")
         st.stop()
-
+    
     st.subheader("Create/Edit Badge")
 
     editing = False

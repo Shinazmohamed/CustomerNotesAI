@@ -7,7 +7,9 @@ import io
 from auth import is_authenticated, get_current_user, user_has_access
 from utils import get_team_by_id, export_to_csv, calculate_team_stats, get_badge_by_id
 
-
+if not user_has_access('view_reports'):
+    st.warning("You don't have permission to manage sprints.")
+    st.stop()
 
 def safe_date(d):
     if isinstance(d, date):
@@ -16,7 +18,6 @@ def safe_date(d):
         return datetime.strptime(d, '%Y-%m-%d').date()
     except (ValueError, TypeError):
         return None
-
 
 # Page config
 st.set_page_config(

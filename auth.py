@@ -70,11 +70,12 @@ def user_has_access(feature_name):
     # Define access rules for different features
     access_rules = {
         'award_badges': ['TL', 'Manager'],
-        'create_badges': ['TL', 'Manager'],
-        'edit_teams': ['TL', 'Manager'],
-        'create_sprints': ['TL', 'Manager'],
-        'view_reports': ['TL', 'Manager', 'Dev', 'QA', 'RMO'],
-        'export_data': ['TL', 'Manager']
+        'create_badges': ['Manager'],
+        'view_badges': ['TL', 'Manager', 'Dev', 'QA', 'RMO'],
+        'edit_teams': ['Manager'],
+        'create_sprints': ['Manager'],
+        'view_reports': ['Manager'],
+        'export_data': ['Manager']
     }
     
     if feature_name in access_rules:
