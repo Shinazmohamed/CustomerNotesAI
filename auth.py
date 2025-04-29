@@ -1,7 +1,5 @@
 import streamlit as st
 
-from crud.db_manager import DatabaseManager
-
 # Initialize session state variables for authentication
 # This is done at module level so it's available to all functions
 if 'authenticated' not in st.session_state:

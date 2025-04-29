@@ -40,10 +40,9 @@ st.write("Track your progress towards earning new badges.")
 
 # Get current user
 user = get_current_user()
-is_manager = user['role'] == 'Manager'
 
 # Determine whose progress to show
-if is_manager:
+if user['role'] == 'Manager':
     col1, = st.columns(1)
     with col1:
         all_users = []
