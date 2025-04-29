@@ -43,17 +43,38 @@ if not user_has_access('award_badges'):
 st.title("🎖️ Award Badges")
 st.write("Recognize achievements by awarding badges to team members.")
 
-# Get user's team
-user_team = get_team_by_id(user['team_id'])
-
-# Define tabs
 tab1, tab2 = st.tabs(["Award Badge", "Award History"])
 
 with tab1:
     st.subheader("Award a New Badge")
+# Get user's team
+    user_team = get_team_by_id(user['team_id'])
     
-    # Select team member
-    team_members = [m for m in get_team_members(user['team_id']) if m['id'] != user['id']]
+    # Determine awardable users based on role
+    if user['role'] == 'TL':
+        # TL can award only to their own team members (not themselves, not other TLs/Managers)
+        team_members = [
+            m for m in get_team_members(user['team_id'])
+            if m['id'] != user['id'] and m['role'] not in ['TL', 'Manager']
+        ]
+    elif user['role'] == 'Manager':
+        # Manager can award to anyone except themselves
+        # Get all users from all teams
+        all_users = []
+        for t in st.session_state.teams:
+            all_users.extend(get_team_members(t['id']))
+        # Remove duplicates and self
+        seen_ids = set()
+        team_members = []
+        for m in all_users:
+            if m['id'] != user['id'] and m['id'] not in seen_ids:
+                team_members.append(m)
+                seen_ids.add(m['id'])
+    else:
+        # Other roles cannot award badges
+        st.warning("You don't have permission to award badges.")
+        st.stop()
+    
     team_members_options = [{'label': m['name'], 'value': m['id']} for m in team_members]
     
     selected_member_id = st.selectbox(
@@ -84,7 +105,7 @@ with tab1:
                     eligible_badges.append(badge_dict)
             except (json.JSONDecodeError, AttributeError, KeyError):
                 continue
-        
+            
         if eligible_badges:
             badge_options = [{'label': f"{b['name']} ({b['category']})", 'value': b['id']} for b in eligible_badges]
             
@@ -111,7 +132,7 @@ with tab1:
                 )
                 if filtered_awards:
                     st.warning(f"Note: {selected_member['name']} already has this badge (awarded on {filtered_awards[0].get('awarded_at', 'unknown date')})")
-
+        
                 
                 # Reason
                 reason = st.text_area("Reason for Awarding", placeholder="Explain why you're awarding this badge...")
@@ -156,7 +177,7 @@ with tab1:
             st.warning(f"No eligible badges found for role: {selected_member['role']}")
     else:
         st.error("Failed to retrieve team member details.")
-
+    
 with tab2:
     st.subheader("Award History")
     
