@@ -72,8 +72,13 @@ with tab1:
         eligible_badges = []
         for badge_id, badge in badges.items():
             try:
-                roles = json.loads(badge['eligible_roles']) if isinstance(badge['eligible_roles'], str) else badge['eligible_roles']
-                if selected_member['role'] in roles:
+                # Handle both string and list formats for eligible_roles
+                roles = badge.get('eligible_roles', [])
+                if isinstance(roles, str):
+                    roles = json.loads(roles.replace("'", "\""))  # Handle single quotes if present
+                
+                # Case-insensitive role matching
+                if selected_member['role'].lower() in [r.lower() for r in roles]:
                     badge_dict = badge.copy()
                     badge_dict['id'] = badge_id
                     eligible_badges.append(badge_dict)

@@ -43,8 +43,24 @@ def normalize_criteria(value):
 # Prepare badges
 badges = st.session_state.badges
 user_awards = [a for a in st.session_state.awards if a['user_id'] == user['id']]
-earned_ids = [a['id'] for a in user_awards]
-eligible_badges = filter_badges_by_role(badges, user['role'])
+earned_ids = [a['badge_id'] for a in user_awards]
+
+# Modified badge filtering
+eligible_badges = []
+for badge_id, badge in badges.items():
+    try:
+        # Handle both string and list formats for eligible_roles
+        roles = badge.get('eligible_roles', [])
+        if isinstance(roles, str):
+            roles = json.loads(roles.replace("'", "\""))  # Handle single quotes
+        
+        # Case-insensitive role matching
+        if user['role'].lower() in [r.lower() for r in roles]:
+            badge_dict = badge.copy()
+            badge_dict['id'] = badge_id
+            eligible_badges.append(badge_dict)
+    except (json.JSONDecodeError, AttributeError, KeyError):
+        continue
 
 # Normalize criteria for consistency
 for badge in eligible_badges:
@@ -171,7 +187,7 @@ with tab2:
         if filtered_earned_badges:
             earned_data = []
             for badge in filtered_earned_badges:
-                award = next((a for a in user_awards if a['id'] == badge['id']), None)
+                award = next((a for a in user_awards if a['badge_id'] == badge['id']), None)  # Changed from a['id'] to a['badge_id']
                 if award:
                     earned_data.append({
                         'Badge': badge['name'],
