@@ -67,6 +67,14 @@ if not is_authenticated():
             success = authenticate_user(username, password)
             if success:
                 st.success("Login successful!")
+                user = get_current_user()
+                # Role-based navigation
+                if user['role'] == 'Manager':
+                    st.switch_page("pages/8_Dashboard-Manager.py")
+                elif user['role'] == 'TL':
+                    st.switch_page("pages/1_Dashboard.py")
+                else:
+                    st.switch_page("pages/1_Dashboard.py")
                 st.rerun()
             else:
                 st.error("Invalid username or password")
