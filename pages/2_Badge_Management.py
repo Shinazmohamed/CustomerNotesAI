@@ -209,7 +209,7 @@ elif st.session_state.active_tab == "Create/Edit Badge":
                 st.error("At least one eligible role is required")
             else:
                 badge_data = {
-                    'badge_id': badge['id'],
+                    'id': badge['id'],
                     'name': name,
                     'description': description,
                     'category': category,

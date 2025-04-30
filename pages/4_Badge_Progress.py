@@ -75,14 +75,14 @@ earned_ids = [a['badge_id'] for a in user_awards]
 
 # Modified badge filtering
 eligible_badges = []
-for badge_id, badge in badges.items():
+for badge in badges:
     try:
         roles = badge.get('eligible_roles', [])
         if isinstance(roles, str):
             roles = json.loads(roles.replace("'", "\""))
         if progress_user_role.lower() in [r.lower() for r in roles]:
             badge_dict = badge.copy()
-            badge_dict['id'] = badge_id
+            badge_dict['id'] = badge['id']
             eligible_badges.append(badge_dict)
     except (json.JSONDecodeError, AttributeError, KeyError):
         continue

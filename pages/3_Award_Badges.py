@@ -91,7 +91,7 @@ with tab1:
         # Select badge
         badges = st.session_state.badges
         eligible_badges = []
-        for badge_id, badge in badges.items():
+        for badge in badges:
             try:
                 # Handle both string and list formats for eligible_roles
                 roles = badge.get('eligible_roles', [])
@@ -101,7 +101,7 @@ with tab1:
                 # Case-insensitive role matching
                 if selected_member['role'].lower() in [r.lower() for r in roles]:
                     badge_dict = badge.copy()
-                    badge_dict['id'] = badge_id
+                    badge_dict['id'] = badge['id']
                     eligible_badges.append(badge_dict)
             except (json.JSONDecodeError, AttributeError, KeyError):
                 continue
