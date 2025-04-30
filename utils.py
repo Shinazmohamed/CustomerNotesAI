@@ -230,6 +230,12 @@ def calculate_team_stats(team_id):
         # Count recent badges
         for award in member_awards:
             awarded_at = award.get('awarded_at')
+            # Convert string to date if necessary
+            if isinstance(awarded_at, str):
+                try:
+                    awarded_at = datetime.strptime(awarded_at, "%Y-%m-%d").date()
+                except Exception:
+                    continue
             if awarded_at and isinstance(awarded_at, date) and awarded_at >= thirty_days_ago:
                 recent_badges += 1
     
